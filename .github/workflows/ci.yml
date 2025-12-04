@@ -3,9 +3,9 @@ name: Smart Nutrition CI
 # Trigger on push or pull request to main branch
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "Develop" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "Develop" ]
 
 jobs:
   # --- JOB 1: BACKEND (Python/FastAPI) ---
