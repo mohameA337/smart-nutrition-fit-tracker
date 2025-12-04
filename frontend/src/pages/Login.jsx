@@ -11,18 +11,33 @@ export default function Auth() {
     e.preventDefault();
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-      const payload = isLogin ? { email, password } : { name, email, password };
+      // CHANGE 1 & 2: Use full URL and correct endpoint names (/signup instead of /register)
+      // Also added /v1/ to match the backend router prefix
+      const baseURL = "http://localhost:8000/api/v1/auth";
+      const endpoint = isLogin ? `${baseURL}/login` : `${baseURL}/signup`;
+
+      // CHANGE 3: Backend expects 'full_name', not 'name'
+      const payload = isLogin 
+        ? { email, password } 
+        : { full_name: name, email, password };
 
       const res = await axios.post(endpoint, payload);
 
       alert(isLogin ? "Login successful!" : "Account created!");
-      console.log("User Token:", res.data.token);
+      
+      // CHANGE 4: Backend returns 'access_token', not 'token'
+      console.log("User Token:", res.data.access_token);
 
       // store token
-      localStorage.setItem("token", res.data.token);
+      if (res.data.access_token) {
+        localStorage.setItem("token", res.data.access_token);
+      }
+      
     } catch (err) {
-      alert("Error: " + err.response?.data?.message || "Something went wrong");
+      console.error(err);
+      // specific error message handling for FastAPI validation errors
+      const errorMessage = err.response?.data?.detail || "Something went wrong";
+      alert("Error: " + errorMessage);
     }
   };
 
