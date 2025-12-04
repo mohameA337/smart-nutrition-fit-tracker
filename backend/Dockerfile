@@ -1,3 +1,4 @@
+
 # Use Python 3.9
 FROM python:3.9
 
@@ -13,3 +14,4 @@ COPY . .
 
 # Command to run the app
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+

@@ -1,16 +1,3 @@
-# version: '3.8'
-
-# services:
-#   frontend:
-#     build: ./frontend
-#     ports:
-#       - "3000:3000"
-#     volumes:
-#       - ./frontend:/app
-#       - /app/node_modules
-#     environment:
-#       - CHOKIDAR_USEPOLLING=true
-#       - WATCHPACK_POLLING=true
 version: '3.8'
 
 services:
@@ -35,7 +22,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Note: 'db' here refers to the service name above, not localhost!
       - DATABASE_URL=postgresql://postgres:password@db:5432/nutrition_db
       - SECRET_KEY=your_secret_key_here
       - ALGORITHM=HS256
