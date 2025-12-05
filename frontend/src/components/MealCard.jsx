@@ -20,8 +20,8 @@ const MealCard = ({ data, theme, onDelete }) => {
           <span>{data.name}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: theme.subText }}>
-          <span>🔥 {data.calories} kcal</span>
-          <span style={{ color: theme.mealBorder }}>💪 {data.protein}</span>
+          <span> {data.calories} kcal</span>
+          <span style={{ color: theme.mealBorder }}>protien = {data.protein}</span>
         </div>
       </div>
       <button 

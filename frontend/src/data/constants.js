@@ -19,6 +19,8 @@ export const PREDEFINED_MEALS = [
   { id: 'm18', name: 'Mixed Nuts (Handful)', calories: 170, protein: '6g' },
   { id: 'm19', name: 'Banana', calories: 105, protein: '1g' },
   { id: 'm20', name: 'Hummus & Carrots', calories: 150, protein: '5g' },
+  { id: 'm21', name: 'French Fries', calories: 400, protein: '15g' },
+
 ];
 
 export const PREDEFINED_WORKOUTS = [
