@@ -2,6 +2,7 @@ import React from 'react';
 
 const MealCard = ({ data, theme, onDelete }) => {
   if (!data) return null;
+
   return (
     <div style={{ 
       marginTop: "10px", 
@@ -20,8 +21,8 @@ const MealCard = ({ data, theme, onDelete }) => {
           <span>{data.name}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: theme.subText }}>
-          <span> {data.calories} kcal</span>
-          <span style={{ color: theme.mealBorder }}>protien = {data.protein}</span>
+          {/* Display Calculated Calories and Weight */}
+          <span>🍗 {data.calories} kcal ({data.weight}g)</span>
         </div>
       </div>
       <button 
