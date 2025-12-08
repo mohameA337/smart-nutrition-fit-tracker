@@ -14,6 +14,17 @@ export const mockLogWorkout = async (workoutData) => {
     });
 };
 
+export const mockLogMeal = async (mealData) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({
+                id: Date.now(),
+                ...mealData
+            });
+        }, 800);
+    });
+};
+
 // Placeholder for future real API calls
 // export const logWorkout = async (data) => {
 //     const response = await axios.post(`${API_URL}/workouts`, data);
