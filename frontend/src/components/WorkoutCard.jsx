@@ -1,15 +1,15 @@
 import React from 'react';
 
-const MealCard = ({ data, theme, onDelete }) => {
+const WorkoutCard = ({ data, theme, onDelete }) => {
   if (!data) return null;
 
   return (
     <div style={{ 
       marginTop: "10px", 
       padding: "15px", 
-      background: theme.mealBg, 
+      background: theme.accentRedbg, 
       borderRadius: "10px", 
-      borderLeft: `5px solid ${theme.mealBorder}`,
+      borderLeft: `5px solid ${theme.accentRed}`,
       boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
       color: theme.text,
       display: 'flex',
@@ -21,8 +21,7 @@ const MealCard = ({ data, theme, onDelete }) => {
           <span>{data.name}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: theme.subText }}>
-          {/* Display Calculated Calories and Weight */}
-          <span>🍗 {data.calories} kcal ({data.weight}g)</span>
+          <span>💪 {data.caloriesBurned} kcal ({data.duration}min)</span>
         </div>
       </div>
       <button 
@@ -37,7 +36,7 @@ const MealCard = ({ data, theme, onDelete }) => {
             transition: 'opacity 0.2s',
             padding: '5px'
         }}
-        title="Delete Meal"
+        title="Delete Workout"
         onMouseOver={(e) => e.target.style.opacity = 1}
         onMouseOut={(e) => e.target.style.opacity = 0.6}
       >
@@ -47,4 +46,4 @@ const MealCard = ({ data, theme, onDelete }) => {
   );
 };
 
-export default MealCard;
+export default WorkoutCard;
