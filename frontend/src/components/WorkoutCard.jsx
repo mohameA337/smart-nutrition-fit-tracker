@@ -5,40 +5,43 @@ const WorkoutCard = ({ data, theme, onDelete }) => {
 
   return (
     <div style={{ 
-      display: 'flex', 
-      justifyContent: 'space-between', 
-      alignItems: 'center', 
-      padding: '12px', 
-      background: theme.workoutBg || theme.itemBg, // Fallback if specific bg not defined
-      borderRadius: '8px', 
-      borderLeft: `4px solid ${theme.workoutBorder || theme.accentRed}`,
-      border: `1px solid ${theme.itemBorder}`,
-      marginBottom: '10px', // Spacing between cards
-      color: theme.text
+      marginTop: "10px", 
+      padding: "15px", 
+      background: theme.accentRedbg, 
+      borderRadius: "10px", 
+      borderLeft: `5px solid ${theme.accentRed}`,
+      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+      color: theme.text,
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center'
     }}>
-       <div>
-          <strong>{data.name}</strong> ({data.duration} min)
+      <div style={{ display: 'grid', gap: '4px', fontSize: '15px', flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+          <span>{data.name}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: theme.subText }}>
+          <span>💪 {data.caloriesBurned} kcal ({data.duration}min)</span>
+        </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ color: theme.accentRed, fontWeight: 'bold' }}>-{data.caloriesBurned} kcal</span>
-          <button 
-              onClick={onDelete} 
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '18px',
-                cursor: 'pointer',
-                opacity: 0.6,
-                padding: '5px',
-                transition: 'opacity 0.2s'
-              }}
-              title="Delete Workout"
-              onMouseOver={(e) => e.target.style.opacity = 1}
-              onMouseOut={(e) => e.target.style.opacity = 0.6}
-          >
-              🗑️
-          </button>
-      </div>
+      <button 
+        onClick={onDelete}
+        style={{
+            background: 'none',
+            border: 'none',
+            fontSize: '18px',
+            cursor: 'pointer',
+            marginLeft: '15px',
+            opacity: 0.6,
+            transition: 'opacity 0.2s',
+            padding: '5px'
+        }}
+        title="Delete Workout"
+        onMouseOver={(e) => e.target.style.opacity = 1}
+        onMouseOut={(e) => e.target.style.opacity = 0.6}
+      >
+        🗑️
+      </button>
     </div>
   );
 };

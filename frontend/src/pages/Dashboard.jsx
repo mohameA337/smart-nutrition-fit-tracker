@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // Imports from the new modular structure
 import { PREDEFINED_MEALS, PREDEFINED_WORKOUTS } from '../data/constants';
 import { THEMES } from '../theme/theme';
-import { mockLogWorkout } from '../services/api';
+import { mockLogWorkout,mockLogMeal } from '../services/api';
 import MealCard from '../components/MealCard';
 import WorkoutCard from '../components/WorkoutCard';
 import StatCard from '../components/StatCard';
@@ -16,7 +16,10 @@ const Dashboard = () => {
 
   // Meals State
   const [selectedMealId, setSelectedMealId] = useState('');
+  const [mealWeight, setMealWeight] = useState('');
   const [dailyMeals, setDailyMeals] = useState([]);
+  const [mealLoading, setMealLoading] = useState(false);
+
 
   // Exercises State
   const [selectedWorkoutId, setSelectedWorkoutId] = useState('');
@@ -26,13 +29,48 @@ const Dashboard = () => {
 
   // --- Handlers: Meals ---
   const handleMealSelect = (e) => setSelectedMealId(e.target.value);
+  const handleWeightChange = (e) => setMealWeight(e.target.value);
 
-  const handleAddMeal = () => {
-    if (!selectedMealId) return;
-    const mealToAdd = PREDEFINED_MEALS.find(m => m.id === selectedMealId);
-    if (mealToAdd) {
-      setDailyMeals([...dailyMeals, { ...mealToAdd, id: Date.now() }]);
-      setSelectedMealId('');
+const handleAddMeal = async () => {
+    // 1. Validation
+    if (!selectedMealId || !mealWeight) return;
+
+    setMealLoading(true);
+
+    // 2. Find Meal
+    const meal = PREDEFINED_MEALS.find(m => m.id === selectedMealId);
+    if (!meal) {
+      setMealLoading(false);
+      return;
+    }
+    
+    // 3. Validate Input
+    const weightInt = parseInt(mealWeight);
+    if (isNaN(weightInt) || weightInt <= 0) {
+      alert("Please enter a valid weight in grams.");
+      setMealLoading(false);
+      return;
+    }
+        
+
+    const totalCalories = Math.round(weightInt * meal.caloriesPerGram);
+    const mealData = {
+      name: meal.name,
+      weight: weightInt,
+      calories: totalCalories,
+    };
+    
+    try {
+        const savedMeal = await mockLogMeal(mealData);
+        setDailyMeals([...dailyMeals, savedMeal]);
+        
+        // Reset
+        setSelectedMealId('');
+        setMealWeight('');
+    } catch (err) {
+        alert("Failed to add meal");
+    } finally {
+        setMealLoading(false);
     }
   };
 
@@ -74,7 +112,7 @@ const Dashboard = () => {
       setSelectedWorkoutId('');
       setWorkoutDuration('');
     } catch (err) {
-      alert("Failed to log workout.");
+      alert("Failed to add workout.");
     } finally {
       setExerciseLoading(false);
     }
@@ -167,27 +205,40 @@ const Dashboard = () => {
             <h2 style={{ borderBottom: `2px solid ${theme.accentBlue}`, paddingBottom: '10px', color: theme.accentBlue, marginTop: 0 }}>🥑 Add Meal</h2>
             
             <div style={{ padding: '20px', borderRadius: '10px', border: `1px dashed ${theme.accentBlue}`, marginBottom: '20px' }}>
-              <p style={{ margin: '0 0 10px 0', color: theme.subText }}>Select a meal from the list:</p>
-              
-              <select 
-                value={selectedMealId} 
-                onChange={handleMealSelect}
-                style={{ ...inputStyle, cursor: 'pointer', marginBottom: '10px' }}
-              >
-                <option value="" disabled>-- Choose a Meal --</option>
-                {PREDEFINED_MEALS.map(meal => (
-                  <option key={meal.id} value={meal.id}>
-                    {meal.name} ({meal.calories} kcal)
-                  </option>
-                ))}
-              </select>
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Meal</label>
+                <select 
+                  value={selectedMealId} 
+                  onChange={handleMealSelect}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="" disabled>-- Choose Meal --</option>
+                  {PREDEFINED_MEALS.map(meal => (
+                    <option key={meal.id} value={meal.id}>
+                      {meal.name} (~{meal.caloriesPerGram} cal/g)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '10px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Weight (grams)</label>
+                <input 
+                  type="number" 
+                  placeholder="e.g. 150" 
+                  value={mealWeight} 
+                  onChange={handleWeightChange} 
+                  style={inputStyle}
+                  min="1"
+                />
+              </div>
 
               <button 
                 onClick={handleAddMeal} 
-                disabled={!selectedMealId}
-                style={{ ...buttonStyle, backgroundColor: theme.accentBlue, opacity: !selectedMealId ? 0.6 : 1 }}
+                disabled={mealLoading || !selectedMealId || !mealWeight}
+                style={{ ...buttonStyle, backgroundColor: theme.accentBlue, opacity: (mealLoading || !selectedMealId || !mealWeight) ? 0.6 : 1 }}
               >
-                Add Meal
+                {mealLoading ? "Adding..." : "Add Meal"}
               </button>
             </div>
 
@@ -208,11 +259,11 @@ const Dashboard = () => {
 
           {/* RIGHT COLUMN: EXERCISE */}
           <div style={sectionStyle}>
-            <h2 style={{ borderBottom: `2px solid ${theme.accentRed}`, paddingBottom: '10px', color: theme.accentRed, marginTop: 0 }}>🏃‍♂️ Add Exercise</h2>
+            <h2 style={{ borderBottom: `2px solid ${theme.accentRed}`, paddingBottom: '10px', color: theme.accentRed, marginTop: 0 }}>🏃‍♂️ Add Workout</h2>
             
             <div style={{ padding: '20px', borderRadius: '10px', border: `1px dashed ${theme.accentRed}`, marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Activity Type</label>
+                <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Workout</label>
                 <select 
                   value={selectedWorkoutId} 
                   onChange={handleWorkoutSelect}
@@ -244,12 +295,12 @@ const Dashboard = () => {
                 disabled={exerciseLoading || !selectedWorkoutId || !workoutDuration}
                 style={{ ...buttonStyle, backgroundColor: theme.accentRed, opacity: (exerciseLoading || !selectedWorkoutId || !workoutDuration) ? 0.6 : 1 }}
               >
-                {exerciseLoading ? "Adding..." : "Log Workout"}
+                {exerciseLoading ? "Adding..." : "Add Workout"}
               </button>
             </div>
 
-            <h3>Today's Activity</h3>
-            {dailyExercises.length === 0 ? <p style={{ color: theme.subText, fontStyle: 'italic' }}>No exercises logged yet.</p> : (
+            <h3>Today's Workouts</h3>
+            {dailyExercises.length === 0 ? <p style={{ color: theme.subText, fontStyle: 'italic' }}>No exercises added yet.</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {dailyExercises.map((ex) => (
                   <WorkoutCard 
@@ -266,7 +317,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  );
-};
 
+);
+}
 export default Dashboard;

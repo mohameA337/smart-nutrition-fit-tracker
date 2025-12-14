@@ -12,7 +12,8 @@ export const THEMES = {
     mealBg: '#e8f6f3',
     mealBorder: '#27ae60',
     accentBlue: '#3498db',
-    accentRed: '#e74c3c'
+    accentRed: '#e74c3c',
+    accentRedbg:'#fbd8d6ff'
   },
   dark: {
     bg: '#121212',
@@ -27,6 +28,8 @@ export const THEMES = {
     mealBg: '#1e3a2f',
     mealBorder: '#2ecc71',
     accentBlue: '#5dade2',
-    accentRed: '#ec7063'
+    accentRed: '#ed311cff',
+    accentRedbg:'#85160eff'
+
   }
 };
