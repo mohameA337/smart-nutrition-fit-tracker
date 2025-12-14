@@ -1,0 +1,19 @@
+# --- Python Basics ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Virtual Environments ---
+venv/
+env/
+.venv/
+.env
+
+# --- OS Junk Files ---
+.DS_Store
+Thumbs.db
+
+# --- IDES / Editors ---
+.vscode/
+.idea/
