@@ -6,19 +6,19 @@ import Navbar from './components/Navbar';
 
 // Import Pages
 import Dashboard from './pages/Dashboard';
-import Login from './pages/Login'; // <--- Import the new Login page
+import Login from './pages/Login';
+import Profile from './pages/Profile'; // Import Profile
 
 function App() {
   return (
     <Router>
       <div className="app-container">
-        {/* Navbar stays at the top */}
         <Navbar />
         
-        {/* Routes switch the content below */}
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/login" element={<Login />} /> {/* <--- Add this Route */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<Profile />} /> {/* Add Route */}
         </Routes>
       </div>
     </Router>
