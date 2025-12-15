@@ -3,7 +3,6 @@ import axios from "axios";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-<<<<<<< Updated upstream
 
   // Common fields
   const [email, setEmail] = useState("");
@@ -17,18 +16,12 @@ export default function Auth() {
   const [weight, setWeight] = useState("");
   const [targetWeight, setTargetWeight] = useState("");
   const [activityRate, setActivityRate] = useState("");
-=======
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
->>>>>>> Stashed changes
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-<<<<<<< Updated upstream
 
       const payload = isLogin
         ? { email, password }
@@ -43,25 +36,13 @@ export default function Auth() {
             targetWeight,
             activityRate,
           };
-=======
-      const payload = isLogin ? { email, password } : { name, email, password };
->>>>>>> Stashed changes
 
       const res = await axios.post(endpoint, payload);
 
       alert(isLogin ? "Login successful!" : "Account created!");
-<<<<<<< Updated upstream
       localStorage.setItem("token", res.data.token);
     } catch (err) {
       alert(err.response?.data?.message || "Something went wrong");
-=======
-      console.log("User Token:", res.data.token);
-
-      // store token
-      localStorage.setItem("token", res.data.token);
-    } catch (err) {
-      alert("Error: " + err.response?.data?.message || "Something went wrong");
->>>>>>> Stashed changes
     }
   };
 
@@ -70,19 +51,7 @@ export default function Auth() {
       <form onSubmit={handleSubmit} style={styles.card}>
         <h2>{isLogin ? "Login" : "Create Account"}</h2>
 
-<<<<<<< Updated upstream
         {/* Email */}
-=======
-        {!isLogin && (
-          <input
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-          />
-        )}
-
->>>>>>> Stashed changes
         <input
           placeholder="Email"
           type="email"
@@ -92,10 +61,7 @@ export default function Auth() {
           required
         />
 
-<<<<<<< Updated upstream
         {/* Password */}
-=======
->>>>>>> Stashed changes
         <input
           placeholder="Password"
           type="password"
@@ -105,7 +71,6 @@ export default function Auth() {
           required
         />
 
-<<<<<<< Updated upstream
         {!isLogin && (
           <>
             {/* Name */}
@@ -188,18 +153,12 @@ export default function Auth() {
           </>
         )}
 
-=======
->>>>>>> Stashed changes
         <button type="submit" style={styles.button}>
           {isLogin ? "Login" : "Register"}
         </button>
 
         <p
-<<<<<<< Updated upstream
           style={{ cursor: "pointer", marginTop: 10, textAlign: "center" }}
-=======
-          style={{ cursor: "pointer", marginTop: 10 }}
->>>>>>> Stashed changes
           onClick={() => setIsLogin(!isLogin)}
         >
           {isLogin
@@ -220,11 +179,7 @@ const styles = {
     background: "#f3f3f3",
   },
   card: {
-<<<<<<< Updated upstream
     width: 380,
-=======
-    width: 350,
->>>>>>> Stashed changes
     padding: 25,
     background: "white",
     borderRadius: 10,
@@ -233,11 +188,7 @@ const styles = {
   input: {
     width: "100%",
     padding: 10,
-<<<<<<< Updated upstream
     margin: "8px 0",
-=======
-    margin: "10px 0",
->>>>>>> Stashed changes
     borderRadius: 5,
     border: "1px solid #ccc",
   },
