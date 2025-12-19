@@ -21,7 +21,7 @@ class MealOut(MealBase):
 class WorkoutBase(BaseModel):
     name: str
     duration: int
-    caloriesBurned: int 
+    calories_burned: int 
 
 class WorkoutCreate(WorkoutBase):
     pass

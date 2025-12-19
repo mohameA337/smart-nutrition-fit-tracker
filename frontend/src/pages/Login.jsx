@@ -1,7 +1,9 @@
-import { useState } from "react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import { login, register } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Auth() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
 
   // Common fields
@@ -17,32 +19,44 @@ export default function Auth() {
   const [targetWeight, setTargetWeight] = useState("");
   const [activityRate, setActivityRate] = useState("");
 
+  // Check if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
-
-      const payload = isLogin
-        ? { email, password }
-        : {
-            email,
-            password,
-            name,
-            gender,
-            age,
-            height,
-            weight,
-            targetWeight,
-            activityRate,
-          };
-
-      const res = await axios.post(endpoint, payload);
-
-      alert(isLogin ? "Login successful!" : "Account created!");
-      localStorage.setItem("token", res.data.token);
+      if (isLogin) {
+        const res = await login({ email, password });
+        localStorage.setItem("token", res.access_token);
+        // alert("Login successful!"); // Removed to allow auto-redirect
+        navigate("/dashboard");
+      } else {
+        const payload = {
+          email,
+          password,
+          full_name: name,
+          gender,
+          age: parseInt(age),
+          height: parseInt(height),
+          weight: parseInt(weight),
+          target_weight: parseInt(targetWeight),
+          activity_rate: activityRate,
+          // Initialize start/goal weight with current/target for now
+          start_weight: parseInt(weight),
+          goal_weight: parseInt(targetWeight)
+        };
+        await register(payload);
+        alert("Account created! Please login.");
+        setIsLogin(true);
+      }
     } catch (err) {
-      alert(err.response?.data?.message || "Something went wrong");
+      alert(err.response?.data?.detail || "Something went wrong");
     }
   };
 

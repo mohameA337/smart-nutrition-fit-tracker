@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
@@ -9,7 +10,7 @@ from datetime import timedelta, datetime
 router = APIRouter()
 
 # 1. SIGNUP
-@router.post("/signup", response_model=UserOut)
+@router.post("/register", response_model=UserOut)
 def signup(user: UserCreate, db: Session = Depends(get_db)):
     # Check if user already exists
     db_user = db.query(User).filter(User.email == user.email).first()
@@ -18,7 +19,19 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
     
     # Create new user
     hashed_password = get_password_hash(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_password, full_name=user.full_name)
+    new_user = User(
+        email=user.email, 
+        hashed_password=hashed_password, 
+        full_name=user.full_name,
+        gender=user.gender,
+        age=user.age,
+        height=user.height,
+        weight=user.weight,
+        target_weight=user.target_weight,
+        activity_rate=user.activity_rate,
+        start_weight=user.start_weight,
+        goal_weight=user.goal_weight
+    )
     
     db.add(new_user)
     db.commit()
@@ -27,12 +40,18 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
 
 # 2. LOGIN
 @router.post("/login", response_model=Token)
-def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # Find user
-    user = db.query(User).filter(User.email == user_credentials.email).first()
+    print(f"DEBUG: Login attempt for username/email: '{form_data.username}'")
+    user = db.query(User).filter(User.email == form_data.username).first()
     
     # Check password
-    if not user or not verify_password(user_credentials.password, user.hashed_password):
+    if not user:
+        print(f"DEBUG: User not found for email: '{form_data.username}'")
+    elif not verify_password(form_data.password, user.hashed_password):
+        print(f"DEBUG: Password mismatch for user: '{form_data.username}'")
+
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
