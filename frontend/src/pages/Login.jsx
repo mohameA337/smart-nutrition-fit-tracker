@@ -3,41 +3,46 @@ import axios from "axios";
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
+
+  // Common fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Signup fields
   const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
+  const [age, setAge] = useState("");
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
+  const [targetWeight, setTargetWeight] = useState("");
+  const [activityRate, setActivityRate] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // CHANGE 1 & 2: Use full URL and correct endpoint names (/signup instead of /register)
-      // Also added /v1/ to match the backend router prefix
-      const baseURL = "http://localhost:8000/api/v1/auth";
-      const endpoint = isLogin ? `${baseURL}/login` : `${baseURL}/signup`;
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
 
-      // CHANGE 3: Backend expects 'full_name', not 'name'
-      const payload = isLogin 
-        ? { email, password } 
-        : { full_name: name, email, password };
+      const payload = isLogin
+        ? { email, password }
+        : {
+            email,
+            password,
+            name,
+            gender,
+            age,
+            height,
+            weight,
+            targetWeight,
+            activityRate,
+          };
 
       const res = await axios.post(endpoint, payload);
 
       alert(isLogin ? "Login successful!" : "Account created!");
-      
-      // CHANGE 4: Backend returns 'access_token', not 'token'
-      console.log("User Token:", res.data.access_token);
-
-      // store token
-      if (res.data.access_token) {
-        localStorage.setItem("token", res.data.access_token);
-      }
-      
+      localStorage.setItem("token", res.data.token);
     } catch (err) {
-      console.error(err);
-      // specific error message handling for FastAPI validation errors
-      const errorMessage = err.response?.data?.detail || "Something went wrong";
-      alert("Error: " + errorMessage);
+      alert(err.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -46,15 +51,7 @@ export default function Auth() {
       <form onSubmit={handleSubmit} style={styles.card}>
         <h2>{isLogin ? "Login" : "Create Account"}</h2>
 
-        {!isLogin && (
-          <input
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            style={styles.input}
-          />
-        )}
-
+        {/* Email */}
         <input
           placeholder="Email"
           type="email"
@@ -64,6 +61,7 @@ export default function Auth() {
           required
         />
 
+        {/* Password */}
         <input
           placeholder="Password"
           type="password"
@@ -73,12 +71,94 @@ export default function Auth() {
           required
         />
 
+        {!isLogin && (
+          <>
+            {/* Name */}
+            <input
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            {/* Gender */}
+            <select
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+              style={styles.input}
+              required
+            >
+              <option value="" hidden>
+                Gender
+              </option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+
+            {/* Age */}
+            <input
+              type="number"
+              placeholder="Age"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            {/* Height */}
+            <input
+              type="number"
+              placeholder="Height (cm)"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            {/* Weight */}
+            <input
+              type="number"
+              placeholder="Weight (kg)"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            {/* Target Weight */}
+            <input
+              type="number"
+              placeholder="Target Weight (kg)"
+              value={targetWeight}
+              onChange={(e) => setTargetWeight(e.target.value)}
+              style={styles.input}
+              required
+            />
+
+            {/* Activity Rate */}
+            <select
+              value={activityRate}
+              onChange={(e) => setActivityRate(e.target.value)}
+              style={styles.input}
+              required
+            >
+              <option value="" hidden>
+                Activity Rate
+              </option>
+              <option value="low">Low Activity</option>
+              <option value="moderate">Moderate Activity</option>
+              <option value="high">High Activity</option>
+            </select>
+          </>
+        )}
+
         <button type="submit" style={styles.button}>
           {isLogin ? "Login" : "Register"}
         </button>
 
         <p
-          style={{ cursor: "pointer", marginTop: 10 }}
+          style={{ cursor: "pointer", marginTop: 10, textAlign: "center" }}
           onClick={() => setIsLogin(!isLogin)}
         >
           {isLogin
@@ -99,7 +179,7 @@ const styles = {
     background: "#f3f3f3",
   },
   card: {
-    width: 350,
+    width: 380,
     padding: 25,
     background: "white",
     borderRadius: 10,
@@ -108,7 +188,7 @@ const styles = {
   input: {
     width: "100%",
     padding: 10,
-    margin: "10px 0",
+    margin: "8px 0",
     borderRadius: 5,
     border: "1px solid #ccc",
   },

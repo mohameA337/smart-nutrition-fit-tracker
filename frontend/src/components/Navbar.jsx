@@ -17,7 +17,8 @@ const Navbar = () => {
       </div>
       <div>
         <Link to="/" style={{ color: 'white', textDecoration: 'none', marginRight: '20px' }}>Dashboard</Link>
-        <Link to="/login" style={{ color: '#ecf0f1', textDecoration: 'none' }}>Login</Link>
+        <Link to="/profile" style={{ color: 'White', textDecoration: 'none', marginRight: '20px' }}>Profile</Link> {/* Added Link */}
+        <Link to="/login" style={{ color: 'White', textDecoration: 'none' }}>Login</Link>
       </div>
     </nav>
   );
