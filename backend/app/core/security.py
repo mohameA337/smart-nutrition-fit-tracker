@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
+from app.core.config import settings
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 # Secret settings (Move these to .env in production)
-SECRET_KEY = "your-very-secret-key-change-this"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.SECRET_KEY
+ALGORITHM = settings.ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
