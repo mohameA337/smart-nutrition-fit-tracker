@@ -218,7 +218,7 @@ const Dashboard = () => {
 
         {/* Summary Banner */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', marginBottom: '40px', justifyContent: 'center' }}>
-          <StatCard title="Calories In" value={totalCalories} color="#27ae60" theme={theme} />
+          <StatCard title="Calories Gained" value={totalCalories} color="#27ae60" theme={theme} />
           <StatCard title="Calories Burned" value={totalBurned} color="#e74c3c" theme={theme} />
           <StatCard title="Net Calories" value={totalCalories - totalBurned} color="#3498db" theme={theme} />
         </div>
