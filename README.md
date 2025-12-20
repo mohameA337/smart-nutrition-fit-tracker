@@ -9,7 +9,7 @@
 A full-stack web application designed to help users manage their health goals. Track meals, log workouts, and get personalized nutrition advice from an AI Chatbot.
 
 ## 🚀 Live Demo
-**[🔗 Click Here to View Production Site](YOUR_VERCEL_LINK_HERE)**
+**[🔗 Click Here to View Production Site](https://smart-nutrition-fit-tracker-r0decasb3-mohamea337s-projects.vercel.app)**
 *(Replace this link with your actual Vercel URL)*
 
 ---
@@ -49,7 +49,7 @@ A full-stack web application designed to help users manage their health goals. T
 ### Option 1: Using Docker (Recommended)
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/your-repo.git
+    git clone https://github.com/mohameA337/smart-nutrition-fit-tracker.git
     cd your-repo
     ```
 2.  **Set up Environment Variables**:
@@ -108,4 +108,4 @@ Once the backend is running, you can access the interactive API documentation (S
 ---
 
 ## 📧 Contact
-**Mohamed Khabiry** - [GitHub Profile](https://github.com/yourusername)
+**Mohamed Khabiry** - [GitHub Profile](https://github.com/mohameA337)
