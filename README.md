@@ -10,7 +10,7 @@ A full-stack web application designed to help users manage their health goals. T
 
 ## 🚀 Live Demo
 **[🔗 Click Here to View Production Site](https://smart-nutrition-fit-tracker-r0decasb3-mohamea337s-projects.vercel.app)**
-*(Replace this link with your actual Vercel URL)*
+
 
 ---
 
