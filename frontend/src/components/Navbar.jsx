@@ -37,7 +37,6 @@ const Navbar = () => {
                 color: 'white',
                 cursor: 'pointer',
                 fontSize: '1rem',
-                textDecoration: 'underline'
               }}
             >
               Logout
