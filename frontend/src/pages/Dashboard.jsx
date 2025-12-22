@@ -4,16 +4,7 @@ import { useNavigate } from 'react-router-dom';
 // Imports from the new modular structure
 import { PREDEFINED_MEALS, PREDEFINED_WORKOUTS } from '../data/constants';
 import { THEMES } from '../theme/theme';
-import { 
-  logWorkout, 
-  logMeal, 
-  getMeals, 
-  getWorkouts, 
-  deleteMeal, 
-  deleteWorkout, 
-  getUserProfile 
-} from '../services/api';
-
+import { logWorkout, logMeal, getMeals, getWorkouts, deleteMeal, deleteWorkout, getUserProfile } from '../services/api';
 import MealCard from '../components/MealCard';
 import WorkoutCard from '../components/WorkoutCard';
 import StatCard from '../components/StatCard';
