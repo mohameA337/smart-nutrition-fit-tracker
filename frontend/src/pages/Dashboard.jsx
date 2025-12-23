@@ -1,16 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PREDEFINED_MEALS, PREDEFINED_WORKOUTS } from '../data/constants';
 import { THEMES } from '../theme/theme';
-import { logWorkout, logMeal, getMeals, getWorkouts, deleteMeal, deleteWorkout, getUserProfile } from '../services/api';
+import { logWorkout, logMeal, getMeals, getWorkouts, deleteMeal, deleteWorkout, getUserProfile, getWaterIntake, logWater, resetWaterIntake, logWeight, getWeightHistory, sendChatMessage } from '../services/api';
 import MealCard from '../components/MealCard';
 import WorkoutCard from '../components/WorkoutCard';
-import { calculateDailyCalories } from '../data/Nutrition Calc'; 
+import { calculateDailyCalories } from '../data/Nutrition Calc';
 import CircularProgress from '../components/CircularProgress';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  
+
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState(true);
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
@@ -18,15 +19,33 @@ const Dashboard = () => {
 
   //  Water Tracker State 
   const [waterIntake, setWaterIntake] = useState(0);
-  
-  // User Profile State (This was missing in your code)
+
+  // Fetch Water Intake
+  useEffect(() => {
+    const fetchWater = async () => {
+      try {
+        const data = await getWaterIntake();
+        setWaterIntake(data.total_amount);
+      } catch (error) {
+        console.error("Failed to fetch water", error);
+      }
+    };
+    fetchWater();
+  }, []);
+
+  // User Profile State
   const [userProfile, setUserProfile] = useState({
     weight: 0,
     height: 0,
     age: 0,
     gender: 'Male',
     activityRate: 'Moderate',
-    weeklyGoal: 'maintain'
+    weeklyGoal: 'maintain',
+    daily_calorie_goal: 2000,
+    protein_goal: 150,
+    carbs_goal: 200,
+    fats_goal: 70,
+    bmi: 0
   });
 
   const handleLogout = () => {
@@ -47,16 +66,22 @@ const Dashboard = () => {
       try {
         const profile = await getUserProfile();
         const savedGoal = localStorage.getItem('userWeeklyGoal') || 'maintain';
-        
+
         if (profile) {
           // Update state with fetched data
           setUserProfile({
+            name: profile.full_name,
             weight: parseFloat(profile.weight) || 0,
             height: parseFloat(profile.height) || 0,
             age: parseFloat(profile.age) || 0,
-            gender: profile.gender || 'Male', 
+            gender: profile.gender || 'Male',
             activityRate: profile.activity_rate || 'Moderate',
-            weeklyGoal: savedGoal
+            weeklyGoal: savedGoal,
+            daily_calorie_goal: profile.daily_calorie_goal,
+            protein_goal: profile.protein_goal,
+            carbs_goal: profile.carbs_goal,
+            fats_goal: profile.fats_goal,
+            bmi: profile.bmi
           });
           const existing = JSON.parse(localStorage.getItem("user") || '{}');
           localStorage.setItem("user", JSON.stringify({ ...existing, ...profile }));
@@ -70,20 +95,70 @@ const Dashboard = () => {
     fetchUserData();
   }, [navigate]);
 
-  // Pass 'userProfile' (the data)
-  const dailyCalorieGoal = calculateDailyCalories(userProfile,userProfile.weeklyGoal);
+  // Analytics State
+  const [weightHistory, setWeightHistory] = useState([]);
+  const [currentWeight, setCurrentWeight] = useState('');
 
-  // Calculate Water Goal: 35ml per kg (using profile weight)
-  const waterGoal = Math.round((userProfile.weight || 0) * 35); 
+  useEffect(() => {
+    const fetchWeight = async () => {
+      try {
+        const history = await getWeightHistory();
+        const formatted = history.map(h => ({
+          date: new Date(h.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          weight: h.weight
+        }));
+        setWeightHistory(formatted);
+      } catch (e) { console.error("Weight history failed", e); }
+    };
+    fetchWeight();
+  }, []);
 
-  const handleAddWater = (amount) => {
-    setWaterIntake(prev => {
-      const newValue = prev + amount;
-      return newValue > 5000 ? 5000 : newValue;
-    });
+  const handleLogWeight = async () => {
+    if (!currentWeight) return;
+    try {
+      await logWeight(parseFloat(currentWeight));
+      const today = new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      setWeightHistory(prev => {
+        const exists = prev.find(h => h.date === today);
+        if (exists) {
+          return prev.map(h => h.date === today ? { ...h, weight: parseFloat(currentWeight) } : h);
+        }
+        return [...prev, { date: today, weight: parseFloat(currentWeight) }];
+      });
+      setUserProfile(prev => ({ ...prev, weight: parseFloat(currentWeight) }));
+      setCurrentWeight('');
+      alert("Weight logged & Goals Recalculated!");
+    } catch (e) { alert("Failed to log weight"); }
   };
 
-  const handleResetWater = () => setWaterIntake(0);
+  // Smart Goals
+  const dailyCalorieGoal = userProfile.daily_calorie_goal || 2000;
+  const macroGoals = {
+    protein: userProfile.protein_goal || 150,
+    carbs: userProfile.carbs_goal || 250,
+    fats: userProfile.fats_goal || 70
+  };
+
+  // Calculate Water Goal
+  const waterGoal = Math.round((userProfile.weight || 0) * 35);
+
+  const handleAddWater = async (amount) => {
+    try {
+      await logWater(amount);
+      setWaterIntake(prev => prev + amount);
+    } catch (error) {
+      console.error("Failed to log water");
+    }
+  };
+
+  const handleResetWater = async () => {
+    try {
+      await resetWaterIntake();
+      setWaterIntake(0);
+    } catch (error) {
+      console.error("Failed to reset water");
+    }
+  };
 
   // Meals & Exercises State
   const [selectedMealId, setSelectedMealId] = useState('');
@@ -91,12 +166,34 @@ const Dashboard = () => {
   const [dailyMeals, setDailyMeals] = useState([]);
   const [mealLoading, setMealLoading] = useState(false);
 
+  // Manual Meal State
+  const [isManualMeal, setIsManualMeal] = useState(false);
+  const [manualMealName, setManualMealName] = useState('');
+  const [manualMealCals, setManualMealCals] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleAskAI = async () => {
+    if (!manualMealName) return alert("Enter a food name first!");
+    setAiLoading(true);
+    try {
+      const query = `How many calories are in 100g of ${manualMealName}? Respond with JUST the number (e.g. 50).`;
+      const response = await sendChatMessage(query);
+      const match = response.match(/\d+/);
+      if (match) {
+        setManualMealCals(match[0]);
+      } else {
+        alert("AI couldn't find a number. Please enter manually.");
+      }
+    } catch (e) { alert("AI request failed"); }
+    finally { setAiLoading(false); }
+  };
+
   const [selectedWorkoutId, setSelectedWorkoutId] = useState('');
   const [workoutDuration, setWorkoutDuration] = useState('');
   const [dailyExercises, setDailyExercises] = useState([]);
   const [exerciseLoading, setExerciseLoading] = useState(false);
 
-  // Data Fetching (Logs)
+  // Data Fetching
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -118,32 +215,36 @@ const Dashboard = () => {
   const handleWeightChange = (e) => setMealWeight(e.target.value);
 
   const handleAddMeal = async () => {
-    if (!selectedMealId || !mealWeight) return;
-    
-    // Exception Handling: Validation for weight
-    const weightInt = parseInt(mealWeight);
-    if (isNaN(weightInt) || weightInt <= 0) {
-      alert("Please enter a valid weight greater than 0g.");
-      return; 
+    setMealLoading(true);
+    let mealData = null;
+
+    if (isManualMeal) {
+      if (!manualMealName || !manualMealCals || !mealWeight) {
+        alert("Please fill all fields"); setMealLoading(false); return;
+      }
+      const totalCals = Math.round((parseInt(manualMealCals) * parseInt(mealWeight)) / 100);
+      mealData = { name: manualMealName, weight: parseInt(mealWeight), calories: totalCals };
+    } else {
+      if (!selectedMealId || !mealWeight) { setMealLoading(false); return; }
+      const meal = PREDEFINED_MEALS.find(m => m.id === selectedMealId);
+      if (!meal) { setMealLoading(false); return; }
+      const totalCalories = Math.round(parseInt(mealWeight) * meal.caloriesPerGram);
+      mealData = { name: meal.name, weight: parseInt(mealWeight), calories: totalCalories };
     }
 
-    setMealLoading(true);
-    const meal = PREDEFINED_MEALS.find(m => m.id === selectedMealId);
-    if (!meal) { setMealLoading(false); return; }
-    
-    const totalCalories = Math.round(weightInt * meal.caloriesPerGram);
-    const mealData = { name: meal.name, weight: weightInt, calories: totalCalories };
-    
     try {
       const savedMeal = await logMeal(mealData);
       setDailyMeals([...dailyMeals, savedMeal]);
-      setSelectedMealId('');
-      setMealWeight('');
+      if (isManualMeal) {
+        setManualMealName(''); setManualMealCals(''); setMealWeight('');
+      } else {
+        setSelectedMealId(''); setMealWeight('');
+      }
     } catch (err) { alert("Failed to add meal"); } finally { setMealLoading(false); }
   };
 
   const handleDeleteMeal = async (id) => {
-    try { await deleteMeal(id); setDailyMeals(dailyMeals.filter(meal => meal.id !== id)); } 
+    try { await deleteMeal(id); setDailyMeals(dailyMeals.filter(meal => meal.id !== id)); }
     catch (err) { alert("Failed to delete meal"); }
   };
 
@@ -152,21 +253,18 @@ const Dashboard = () => {
 
   const handleAddExercise = async () => {
     if (!selectedWorkoutId || !workoutDuration) return;
-
-    // Exception Handling: Validation for duration
     const durationInt = parseInt(workoutDuration);
     if (isNaN(durationInt) || durationInt <= 0) {
       alert("Please enter a valid duration greater than 0 minutes.");
-      return; 
+      return;
     }
-
     setExerciseLoading(true);
     const workout = PREDEFINED_WORKOUTS.find(w => w.id === selectedWorkoutId);
     if (!workout) { setExerciseLoading(false); return; }
 
     const caloriesBurned = durationInt * workout.caloriesPerMinute;
     const workoutData = { name: workout.name, duration: durationInt, calories_burned: caloriesBurned };
-    
+
     try {
       const newWorkout = await logWorkout(workoutData);
       const normalizedWorkout = { ...newWorkout, caloriesBurned: newWorkout.calories_burned || newWorkout.caloriesBurned };
@@ -177,7 +275,7 @@ const Dashboard = () => {
   };
 
   const handleDeleteWorkout = async (id) => {
-    try { await deleteWorkout(id); setDailyExercises(dailyExercises.filter(ex => ex.id !== id)); } 
+    try { await deleteWorkout(id); setDailyExercises(dailyExercises.filter(ex => ex.id !== id)); }
     catch (err) { alert("Failed to delete workout"); }
   };
 
@@ -232,121 +330,196 @@ const Dashboard = () => {
 
   return (
     <div style={pageStyle}>
-      <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        
-        {/* Header & Toggle */}
+      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-          <h1 style={{ margin: 0 }}>Daily Dashboard</h1>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '28px' }}>Daily Dashboard</h1>
+            <p style={{ margin: '5px 0 0 0', color: theme.subText }}>Welcome back, {userProfile.name || 'User'}!</p>
+          </div>
+          <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <input
+                type="number"
+                placeholder="Log Weight (kg)"
+                value={currentWeight}
+                onChange={e => setCurrentWeight(e.target.value)}
+                style={{ ...inputStyle, width: '120px', padding: '10px' }}
+              />
+              <button onClick={handleLogWeight} style={{ ...buttonStyle, width: 'auto', background: theme.accentBlue, padding: '10px 15px' }}>Log</button>
+            </div>
             <button onClick={toggleTheme} style={{ background: 'transparent', border: `2px solid ${theme.accentBlue}`, color: theme.text, padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' }}>
-                {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+              {isDarkMode ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
 
-        {/* --- NEW VISUAL DASHBOARD --- */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '40px' }}>
-            
-            {/* Calorie Tracker */}
-            <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <h2 style={{ margin: '0 0 20px 0', color: theme.text }}>Daily Calorie Goal</h2>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    {/* Circular Bar */}
-                    <CircularProgress 
-                        value={netCalories} 
-                        max={dailyCalorieGoal} 
-                        color={netCalories > dailyCalorieGoal ? '#ebe414ff' : '#7f27aeff'}
-                        trackColor={theme.itemBg}
-                        label="Net Calories"
-                        subLabel={`Goal: ${dailyCalorieGoal}`}
-                        theme={theme}
-                        size={180}
-                    />
-
-                    {/* Side Stats */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: '14px', color: theme.subText }}>Calories In</div>
-                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#27ae60' }}>
-                                🍜 {totalCaloriesIn}
-                            </div>
-                        </div>
-                        <div style={{ textAlign: 'left' }}>
-                            <div style={{ fontSize: '14px', color: theme.subText }}>Calories Out</div>
-                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: theme.accentRed }}>
-                                🔥 {totalBurned}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        {/* --- SMART TARGETS --- */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '30px' }}>
+          {/* Calories */}
+          <div style={{ ...sectionStyle, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h3 style={{ margin: '0 0 10px 0', color: theme.subText }}>Calories</h3>
+            <CircularProgress
+              value={netCalories}
+              max={dailyCalorieGoal}
+              color={netCalories > dailyCalorieGoal ? '#e74c3c' : '#f1c40f'}
+              size={120}
+              label="Net"
+              subLabel={`Goal: ${dailyCalorieGoal}`}
+              theme={theme}
+            />
+            <div style={{ marginTop: '10px', fontSize: '14px' }}>
+              <span style={{ color: '#27ae60' }}>In: {totalCaloriesIn}</span> • <span style={{ color: '#e74c3c' }}>Out: {totalBurned}</span>
             </div>
+          </div>
 
-            {/* Hydration Tracker */}
-            <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <h2 style={{ margin: '0 0 20px 0', color: theme.text }}>Daily Hydration Goal</h2>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                    <CircularProgress 
-                        value={waterIntake} 
-                        max={waterGoal} 
-                        color="#3493dbff"
-                        trackColor={theme.itemBg}
-                        label="Water Intake"
-                        subLabel={`Goal: ${waterGoal}ml`}
-                        theme={theme}
-                        size={180}
-                    />
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <button onClick={() => handleAddWater(250)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 250ml💧</button>
-                        <button onClick={() => handleAddWater(500)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 500ml💧</button>
-                        <button onClick={handleResetWater} style={{...buttonStyle, background: 'transparent', color: theme.subText, border: `1px solid ${theme.cardBorder}`, padding: '8px 15px', width: 'auto'}}>Reset</button>
-                    </div>
+          {/* Macros */}
+          <div style={{ ...sectionStyle, padding: '20px' }}>
+            <h3 style={{ margin: '0 0 15px 0', color: theme.subText }}>Macro Targets</h3>
+            {[
+              { label: 'Protein', val: 0, goal: macroGoals.protein, color: '#e74c3c' },
+              { label: 'Carbs', val: 0, goal: macroGoals.carbs, color: '#f39c12' },
+              { label: 'Fats', val: 0, goal: macroGoals.fats, color: '#3498db' }
+            ].map((m, i) => (
+              <div key={i} style={{ marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px' }}>
+                  <strong>{m.label}</strong>
+                  <span>{m.goal}g Goal</span>
                 </div>
-            </div>
+                <div style={{ height: '8px', background: theme.itemBg, borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: '0%', height: '100%', background: m.color }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
 
+          {/* Hydration */}
+          <div style={{ ...sectionStyle, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h3 style={{ margin: '0 0 10px 0', color: theme.subText }}>Hydration</h3>
+            <CircularProgress
+              value={waterIntake}
+              max={waterGoal}
+              color="#3498db"
+              size={100}
+              label="Water"
+              subLabel={`${waterIntake} / ${waterGoal}ml`}
+              theme={theme}
+            />
+            <div style={{ display: 'flex', gap: '5px', marginTop: '15px' }}>
+              <button onClick={() => handleAddWater(250)} style={{ ...buttonStyle, background: theme.accentBlue, padding: '5px 10px', fontSize: '12px', width: 'auto' }}>+250ml</button>
+              <button onClick={() => handleAddWater(500)} style={{ ...buttonStyle, background: theme.accentBlue, padding: '5px 10px', fontSize: '12px', width: 'auto' }}>+500ml</button>
+              <button onClick={handleResetWater} style={{ ...buttonStyle, background: 'transparent', border: `1px solid ${theme.subText}`, color: theme.subText, padding: '5px 10px', fontSize: '12px', width: 'auto' }}>Reset</button>
+            </div>
+          </div>
+
+          {/* BMI/Stats */}
+          <div style={{ ...sectionStyle, padding: '20px' }}>
+            <h3 style={{ margin: '0 0 15px 0', color: theme.subText }}>Stats</h3>
+            <div style={{ fontSize: '14px', marginBottom: '10px' }}>
+              <p><strong>BMI:</strong> {userProfile.bmi ? userProfile.bmi.toFixed(1) : 'N/A'}</p>
+              <p><strong>Weight:</strong> {userProfile.weight} kg</p>
+              <p><strong>Goal:</strong> {userProfile.weeklyGoal.replace('_', ' ')}</p>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
-          
+        {/* --- ANALYTICS --- */}
+        <div style={{ ...sectionStyle, marginBottom: '30px' }}>
+          <h3 style={{ margin: '0 0 20px 0', color: theme.text }}>Weight Trend</h3>
+          <div style={{ width: '100%', height: 300 }}>
+            {weightHistory.length > 0 ? (
+              <ResponsiveContainer>
+                <LineChart data={weightHistory}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={theme.itemBorder} />
+                  <XAxis dataKey="date" stroke={theme.subText} />
+                  <YAxis stroke={theme.subText} domain={['dataMin - 1', 'dataMax + 1']} />
+                  <RechartsTooltip contentStyle={{ background: theme.cardBg, borderColor: theme.cardBorder }} />
+                  <Line type="monotone" dataKey="weight" stroke="#8884d8" strokeWidth={2} dot={{ r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <p style={{ textAlign: 'center', color: theme.subText, paddingTop: '100px' }}>Log your weight to see history!</p>
+            )}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+
           {/* Meals */}
           <div style={sectionStyle}>
             <h2 style={{ borderBottom: `3px solid`, paddingBottom: '10px', color: 'rgba(17, 238, 116, 1)', marginTop: 0 }}>🍕 Add Meal</h2>
-            
+
+            {/* Toggle */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+              <button onClick={() => setIsManualMeal(false)} style={{ ...buttonStyle, background: !isManualMeal ? 'rgba(17, 238, 116, 1)' : theme.itemBg, color: !isManualMeal ? 'white' : theme.text }}>Existing</button>
+              <button onClick={() => setIsManualMeal(true)} style={{ ...buttonStyle, background: isManualMeal ? 'rgba(17, 238, 116, 1)' : theme.itemBg, color: isManualMeal ? 'white' : theme.text }}>Custom / AI</button>
+            </div>
+
             <div style={{ padding: '20px', borderRadius: '10px', border: `3px solid`, color: 'rgba(17, 238, 116, 1)', marginBottom: '20px' }}>
-              <div style={{ marginBottom: '10px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Meal</label>
-                <select 
-                  value={selectedMealId} 
-                  onChange={handleMealSelect}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
-                >
-                  <option value="" disabled>-- Choose Meal --</option>
-                  {PREDEFINED_MEALS.map(meal => (
-                    <option key={meal.id} value={meal.id}>
-                      {meal.name} (~{meal.caloriesPerGram} cal/g)
-                    </option>
-                  ))}
-                </select>
-              </div>
+
+              {!isManualMeal ? (
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Meal</label>
+                  <select
+                    value={selectedMealId}
+                    onChange={handleMealSelect}
+                    style={{ ...inputStyle, cursor: 'pointer' }}
+                  >
+                    <option value="" disabled>-- Choose Meal --</option>
+                    {PREDEFINED_MEALS.map(meal => (
+                      <option key={meal.id} value={meal.id}>
+                        {meal.name} (~{meal.caloriesPerGram} cal/g)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Meal Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Chicken Salad"
+                      value={manualMealName}
+                      onChange={e => setManualMealName(e.target.value)}
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Calories per 100g</label>
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      <input
+                        type="number"
+                        placeholder="e.g. 150"
+                        value={manualMealCals}
+                        onChange={e => setManualMealCals(e.target.value)}
+                        style={inputStyle}
+                      />
+                      <button onClick={handleAskAI} disabled={aiLoading} style={{ ...buttonStyle, width: 'auto', background: '#9b59b6', fontSize: '12px', padding: '0 15px' }}>
+                        {aiLoading ? 'Asking...' : 'Ask AI'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Weight (grams)</label>
-                <input 
-                  type="number" 
-                  placeholder="e.g. 150" 
-                  value={mealWeight} 
-                  onChange={handleWeightChange} 
+                <input
+                  type="number"
+                  placeholder="e.g. 150"
+                  value={mealWeight}
+                  onChange={handleWeightChange}
                   style={inputStyle}
                   min="1"
                 />
               </div>
 
-              <button 
-                onClick={handleAddMeal} 
-                disabled={mealLoading || !selectedMealId || !mealWeight}
-                style={{ ...buttonStyle, backgroundColor: 'rgba(17, 238, 116, 1)', opacity: (mealLoading || !selectedMealId || !mealWeight) ? 0.6 : 1 }}
+              <button
+                onClick={handleAddMeal}
+                disabled={mealLoading}
+                style={{ ...buttonStyle, backgroundColor: 'rgba(17, 238, 116, 1)', opacity: mealLoading ? 0.6 : 1 }}
               >
                 {mealLoading ? "Adding..." : "Add Meal"}
               </button>
@@ -356,10 +529,10 @@ const Dashboard = () => {
             {dailyMeals.length === 0 ? <p style={{ color: theme.subText, fontStyle: 'italic' }}>No meals added yet.</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {dailyMeals.map((meal) => (
-                  <MealCard 
-                    key={meal.id} 
-                    data={meal} 
-                    theme={theme} 
+                  <MealCard
+                    key={meal.id}
+                    data={meal}
+                    theme={theme}
                     onDelete={() => handleDeleteMeal(meal.id)}
                   />
                 ))}
@@ -370,14 +543,14 @@ const Dashboard = () => {
           {/* Workouts */}
           <div style={sectionStyle}>
             <h2 style={{ borderBottom: `3px solid ${theme.accentRed}`, paddingBottom: '10px', color: theme.accentRed, marginTop: 0 }}>🏃‍♂️ Add Workout</h2>
-            
+
             <div style={{ padding: '20px', borderRadius: '10px', border: `3px solid ${theme.accentRed}`, marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Workout</label>
-                <select 
-                  value={selectedWorkoutId} 
+                <select
+                  value={selectedWorkoutId}
                   onChange={handleWorkoutSelect}
-                  style={{ ...inputStyle, cursor: 'pointer' }}  
+                  style={{ ...inputStyle, cursor: 'pointer' }}
                 >
                   <option value="" disabled>-- Choose Workout --</option>
                   {PREDEFINED_WORKOUTS.map(w => (
@@ -387,11 +560,11 @@ const Dashboard = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Duration (mins)</label>
-                <input 
-                  type="number" 
+                <input
+                  type="number"
                   placeholder="e.g. 30"
                   value={workoutDuration}
                   onChange={handleDurationChange}
@@ -400,8 +573,8 @@ const Dashboard = () => {
                 />
               </div>
 
-              <button 
-                onClick={handleAddExercise} 
+              <button
+                onClick={handleAddExercise}
                 disabled={exerciseLoading || !selectedWorkoutId || !workoutDuration}
                 style={{ ...buttonStyle, backgroundColor: theme.accentRed, opacity: (exerciseLoading || !selectedWorkoutId || !workoutDuration) ? 0.6 : 1 }}
               >
@@ -413,9 +586,9 @@ const Dashboard = () => {
             {dailyExercises.length === 0 ? <p style={{ color: theme.subText, fontStyle: 'italic' }}>No exercises added yet.</p> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {dailyExercises.map((ex) => (
-                  <WorkoutCard 
-                    key={ex.id} 
-                    data={ex} 
+                  <WorkoutCard
+                    key={ex.id}
+                    data={ex}
                     theme={theme}
                     onDelete={() => handleDeleteWorkout(ex.id)}
                   />

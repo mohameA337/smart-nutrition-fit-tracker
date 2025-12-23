@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import OperationalError
 from app.core.database import engine, Base
-from app.api.v1 import meals, auth, workouts, users, chatbot
+from app.api.v1 import meals, auth, workouts, users, chatbot, water
 
 # --- RETRY LOGIC FOR DB CONNECTION ---
 # This prevents the app from crashing if the DB is waking up
@@ -48,6 +48,7 @@ app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(meals.router, prefix="/api/v1/meals", tags=["Meals"])
 app.include_router(workouts.router, prefix="/api/v1/workouts", tags=["Workouts"])
 app.include_router(users.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(water.router, prefix="/api/v1/water", tags=["Water"])
 app.include_router(chatbot.router, prefix="/api/v1/chat", tags=["Chatbot"])
 
 @app.get("/")

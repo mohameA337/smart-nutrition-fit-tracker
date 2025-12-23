@@ -2,12 +2,14 @@ import axios from 'axios';
 
 // In a real app, this would be an env variable. 
 // Using /api/v1 because that is what your backend logs show: "GET /api/v1/users/me"
-const API_URL = 'http://localhost:8000/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
 
 // Create axios instance
 const api = axios.create({
     baseURL: API_URL,
 });
+
+// Create axios instance
 
 // Add interceptor to inject token
 api.interceptors.request.use((config) => {
@@ -89,6 +91,33 @@ export const getUserProfile = async () => {
 
 export const updateUserProfile = async (userData) => {
     const response = await api.put('/users/me', userData);
+    return response.data;
+};
+
+// --- WATER ---
+export const getWaterIntake = async () => {
+    const response = await api.get('/water/');
+    return response.data;
+};
+
+export const logWater = async (amount) => {
+    const response = await api.post('/water/', { amount });
+    return response.data;
+};
+
+export const resetWaterIntake = async () => {
+    const response = await api.delete('/water/');
+    return response.data;
+};
+
+// --- WEIGHT & ANALYTICS ---
+export const logWeight = async (weight) => {
+    const response = await api.post('/users/weight', { weight });
+    return response.data;
+};
+
+export const getWeightHistory = async () => {
+    const response = await api.get('/users/weight/history');
     return response.data;
 };
 
