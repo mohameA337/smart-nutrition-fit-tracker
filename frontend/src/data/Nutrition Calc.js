@@ -1,4 +1,4 @@
-export const calculateDailyCalories = (user) => {
+export const calculateDailyCalories = (user, weeklyGoal = 'maintain') => {
     // Destructure with default values to prevent crashes
     const { 
         weight = 0, 
@@ -39,5 +39,28 @@ export const calculateDailyCalories = (user) => {
     }
 
     // 4. Calculate Final TDEE
-    return Math.round(bmr * multiplier);
+    const tdee= Math.round(bmr * multiplier);
+
+    let finalCalories = tdee;
+
+    switch (weeklyGoal) {
+        case 'lose_0.25':
+            finalCalories = tdee - 275;
+            break;
+        case 'lose_0.5':
+            finalCalories = tdee - 550;
+            break;
+        case 'gain_0.25':
+            finalCalories = tdee + 275;
+            break;
+        case 'gain_0.5':
+            finalCalories = tdee + 550;
+            break;
+        case 'maintain':
+        default:
+            finalCalories = tdee;
+    }
+
+    // Safety check: Don't let calories go too low (e.g. below 1200)
+    return Math.max(finalCalories, 1200);    
 };

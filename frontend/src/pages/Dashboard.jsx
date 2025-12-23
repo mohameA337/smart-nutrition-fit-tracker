@@ -1,24 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-// Imports from the new modular structure
 import { PREDEFINED_MEALS, PREDEFINED_WORKOUTS } from '../data/constants';
 import { THEMES } from '../theme/theme';
-import { 
-  logWorkout, 
-  logMeal, 
-  getMeals, 
-  getWorkouts, 
-  deleteMeal, 
-  deleteWorkout, 
-  getUserProfile 
-} from '../services/api';
-
+import { logWorkout, logMeal, getMeals, getWorkouts, deleteMeal, deleteWorkout, getUserProfile } from '../services/api';
 import MealCard from '../components/MealCard';
 import WorkoutCard from '../components/WorkoutCard';
-// import StatCard from '../components/StatCard'; // Not used with new layout
-
-// FIXED: Added curly braces {} for named import
 import { calculateDailyCalories } from '../data/Nutrition Calc'; 
 import CircularProgress from '../components/CircularProgress';
 
@@ -30,16 +16,17 @@ const Dashboard = () => {
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-  // --- Water Tracker State ---
+  //  Water Tracker State 
   const [waterIntake, setWaterIntake] = useState(0);
   
-  // RESTORED: User Profile State (This was missing in your code)
+  // User Profile State (This was missing in your code)
   const [userProfile, setUserProfile] = useState({
     weight: 0,
     height: 0,
     age: 0,
     gender: 'Male',
-    activityRate: 'Moderate'
+    activityRate: 'Moderate',
+    weeklyGoal: 'maintain'
   });
 
   const handleLogout = () => {
@@ -59,6 +46,7 @@ const Dashboard = () => {
 
       try {
         const profile = await getUserProfile();
+        const savedGoal = localStorage.getItem('userWeeklyGoal') || 'maintain';
         
         if (profile) {
           // Update state with fetched data
@@ -67,7 +55,8 @@ const Dashboard = () => {
             height: parseFloat(profile.height) || 0,
             age: parseFloat(profile.age) || 0,
             gender: profile.gender || 'Male', 
-            activityRate: profile.activity_rate || 'Moderate'
+            activityRate: profile.activity_rate || 'Moderate',
+            weeklyGoal: savedGoal
           });
           const existing = JSON.parse(localStorage.getItem("user") || '{}');
           localStorage.setItem("user", JSON.stringify({ ...existing, ...profile }));
@@ -81,8 +70,8 @@ const Dashboard = () => {
     fetchUserData();
   }, [navigate]);
 
-  // FIXED: Pass 'userProfile' (the data), NOT 'getUserProfile' (the API function)
-  const dailyCalorieGoal = calculateDailyCalories(userProfile);
+  // Pass 'userProfile' (the data)
+  const dailyCalorieGoal = calculateDailyCalories(userProfile,userProfile.weeklyGoal);
 
   // Calculate Water Goal: 35ml per kg (using profile weight)
   const waterGoal = Math.round((userProfile.weight || 0) * 35); 
@@ -135,7 +124,7 @@ const Dashboard = () => {
     const weightInt = parseInt(mealWeight);
     if (isNaN(weightInt) || weightInt <= 0) {
       alert("Please enter a valid weight greater than 0g.");
-      return; // Stop execution
+      return; 
     }
 
     setMealLoading(true);
@@ -168,7 +157,7 @@ const Dashboard = () => {
     const durationInt = parseInt(workoutDuration);
     if (isNaN(durationInt) || durationInt <= 0) {
       alert("Please enter a valid duration greater than 0 minutes.");
-      return; // Stop execution
+      return; 
     }
 
     setExerciseLoading(true);
@@ -199,7 +188,7 @@ const Dashboard = () => {
   }, 0);
   const netCalories = totalCaloriesIn - totalBurned;
 
-  // --- Styles ---
+  // Styles 
   const pageStyle = {
     minHeight: '100vh',
     background: theme.bg,
@@ -295,7 +284,7 @@ const Dashboard = () => {
 
             {/* Hydration Tracker */}
             <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <h2 style={{ margin: '0 0 20px 0', color: theme.text }}>💧 Hydration</h2>
+                <h2 style={{ margin: '0 0 20px 0', color: theme.text }}>Daily Hydration Goal</h2>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flexWrap: 'wrap', justifyContent: 'center' }}>
                     <CircularProgress 
@@ -310,8 +299,8 @@ const Dashboard = () => {
                     />
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <button onClick={() => handleAddWater(250)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 250ml</button>
-                        <button onClick={() => handleAddWater(500)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 500ml</button>
+                        <button onClick={() => handleAddWater(250)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 250ml💧</button>
+                        <button onClick={() => handleAddWater(500)} style={{...buttonStyle, background: theme.accentBlue, padding: '8px 15px', width: 'auto'}}>+ 500ml💧</button>
                         <button onClick={handleResetWater} style={{...buttonStyle, background: 'transparent', color: theme.subText, border: `1px solid ${theme.cardBorder}`, padding: '8px 15px', width: 'auto'}}>Reset</button>
                     </div>
                 </div>
@@ -323,9 +312,9 @@ const Dashboard = () => {
           
           {/* Meals */}
           <div style={sectionStyle}>
-            <h2 style={{ borderBottom: `2px solid ${theme.accentBlue}`, paddingBottom: '10px', color: theme.accentBlue, marginTop: 0 }}>🥑 Add Meal</h2>
+            <h2 style={{ borderBottom: `3px solid`, paddingBottom: '10px', color: 'rgba(17, 238, 116, 1)', marginTop: 0 }}>🥑 Add Meal</h2>
             
-            <div style={{ padding: '20px', borderRadius: '10px', border: `1px dashed ${theme.accentBlue}`, marginBottom: '20px' }}>
+            <div style={{ padding: '20px', borderRadius: '10px', border: `3px solid`, color: 'rgba(17, 238, 116, 1)', marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Meal</label>
                 <select 
@@ -357,7 +346,7 @@ const Dashboard = () => {
               <button 
                 onClick={handleAddMeal} 
                 disabled={mealLoading || !selectedMealId || !mealWeight}
-                style={{ ...buttonStyle, backgroundColor: theme.accentBlue, opacity: (mealLoading || !selectedMealId || !mealWeight) ? 0.6 : 1 }}
+                style={{ ...buttonStyle, backgroundColor: 'rgba(17, 238, 116, 1)', opacity: (mealLoading || !selectedMealId || !mealWeight) ? 0.6 : 1 }}
               >
                 {mealLoading ? "Adding..." : "Add Meal"}
               </button>
@@ -380,15 +369,15 @@ const Dashboard = () => {
 
           {/* Workouts */}
           <div style={sectionStyle}>
-            <h2 style={{ borderBottom: `2px solid ${theme.accentRed}`, paddingBottom: '10px', color: theme.accentRed, marginTop: 0 }}>🏃‍♂️ Add Workout</h2>
+            <h2 style={{ borderBottom: `3px solid ${theme.accentRed}`, paddingBottom: '10px', color: theme.accentRed, marginTop: 0 }}>🏃‍♂️ Add Workout</h2>
             
-            <div style={{ padding: '20px', borderRadius: '10px', border: `1px dashed ${theme.accentRed}`, marginBottom: '20px' }}>
+            <div style={{ padding: '20px', borderRadius: '10px', border: `3px solid ${theme.accentRed}`, marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Select Workout</label>
                 <select 
                   value={selectedWorkoutId} 
                   onChange={handleWorkoutSelect}
-                  style={{ ...inputStyle, cursor: 'pointer' }}
+                  style={{ ...inputStyle, cursor: 'pointer' }}  
                 >
                   <option value="" disabled>-- Choose Workout --</option>
                   {PREDEFINED_WORKOUTS.map(w => (
