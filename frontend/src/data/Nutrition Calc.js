@@ -29,11 +29,11 @@ export const calculateDailyCalories = (user) => {
     
     if (activityRate) {
         const activity = activityRate.toLowerCase();
-        if (activity.includes('low') || activity.includes('light')) {
+        if (activity.includes('low')) {
             multiplier = 1.3;
         } else if (activity.includes('mod')) {
             multiplier = 1.5;
-        } else if (activity.includes('high') || activity.includes('active')) {
+        } else if (activity.includes('high')) {
             multiplier = 1.7;
         }
     }
