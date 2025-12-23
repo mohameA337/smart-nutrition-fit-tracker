@@ -34,6 +34,9 @@ origins = [
     "http://127.0.0.1:3000",
     "http://localhost:5173", # Vite
     "http://127.0.0.1:5173",
+    "https://smart-nutrition-fit-tracker-p9lpdfggi-mohamea337s-projects.vercel.app", # Vercel Deployment
+    "https://nutrition-backend-2s5b.onrender.com", # Self-reference
+
 ]
 
 app.add_middleware(
