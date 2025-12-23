@@ -29,6 +29,7 @@ create_tables_with_retry()
 app = FastAPI(title="Smart Nutrition & Fitness Tracker")
 
 # --- CORS CONFIGURATION ---
+<<<<<<< HEAD
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -39,9 +40,12 @@ origins = [
 
 ]
 
+=======
+origin_regex = r"https?://(localhost|127\.0\.0\.1)(:\d+)?|https://smart-nutrition-fit-tracker-.*-mohamea337s-projects\.vercel\.app"
+>>>>>>> c3e9f43b3d2cb903afabdd042934e2f3cc07d70e
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origin_regex ,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
