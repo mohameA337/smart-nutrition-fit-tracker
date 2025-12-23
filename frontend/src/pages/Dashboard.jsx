@@ -312,7 +312,7 @@ const Dashboard = () => {
           
           {/* Meals */}
           <div style={sectionStyle}>
-            <h2 style={{ borderBottom: `3px solid`, paddingBottom: '10px', color: 'rgba(17, 238, 116, 1)', marginTop: 0 }}>🥑 Add Meal</h2>
+            <h2 style={{ borderBottom: `3px solid`, paddingBottom: '10px', color: 'rgba(17, 238, 116, 1)', marginTop: 0 }}>🍕 Add Meal</h2>
             
             <div style={{ padding: '20px', borderRadius: '10px', border: `3px solid`, color: 'rgba(17, 238, 116, 1)', marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px' }}>
