@@ -6,11 +6,7 @@ const Profile = () => {
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState(true);
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
-
-  // Toggle Handler
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
-
-  // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
 
   // User Data State
@@ -19,11 +15,13 @@ const Profile = () => {
     email: "",
     gender: "",
     age: "",
-    height: "", // cm
-    weight: "",  // kg (Current Weight)
+    height: "", 
+    weight: "",  
     activityRate: "",
     startWeight: "",
-    goalWeight: ""
+    goalWeight: "",
+    weeklyGoal: "maintain" 
+
   });
 
   const [formData, setFormData] = useState(user);
@@ -33,6 +31,8 @@ const Profile = () => {
     const fetchUser = async () => {
       try {
         const userData = await getUserProfile();
+        const savedGoal = localStorage.getItem('userWeeklyGoal') || 'maintain';
+
         // Map backend fields to frontend state if needed
         const mappedUser = {
           name: userData.full_name || "",
@@ -43,7 +43,9 @@ const Profile = () => {
           weight: userData.weight || "",
           activityRate: userData.activity_rate || "",
           startWeight: userData.start_weight || "",
-          goalWeight: userData.goal_weight || ""
+          goalWeight: userData.goal_weight || "",
+          weeklyGoal: savedGoal
+
         };
         setUser(mappedUser);
         setFormData(mappedUser);
@@ -79,6 +81,7 @@ const Profile = () => {
       };
 
       await updateUserProfile(apiData);
+      localStorage.setItem('userWeeklyGoal', formData.weeklyGoal);
       setUser(formData);
       setIsEditing(false);
     } catch (error) {
@@ -324,6 +327,28 @@ const Profile = () => {
               ) : (
                 <div style={inputStyle}>{user.activityRate}</div>
               )}
+            </div>
+
+            {/* Weekly Goal Selection */}            
+            <div style={{ gridColumn: 'span 2', borderTop: `1px dashed ${theme.cardBorder}`, paddingTop: '15px' }}>
+                <label style={{...labelStyle, color: theme.accentBlue}}>Weekly Pace Goal</label>
+                {isEditing ? (
+                    <select name="weeklyGoal" value={formData.weeklyGoal} onChange={handleChange} style={inputStyle}>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="lose_0.25">Lose 0.25kg / week </option>
+                        <option value="lose_0.5">Lose 0.50kg / week </option>
+                        <option value="gain_0.25">Gain 0.25kg / week </option>
+                        <option value="gain_0.5">Gain 0.50kg / week </option>
+                    </select>
+                ) : (
+                    <div style={inputStyle}>
+                        {user.weeklyGoal === 'maintain' ? 'Maintain Weight' : 
+                         user.weeklyGoal === 'lose_0.25' ? 'Lose 0.25kg/week' :
+                         user.weeklyGoal === 'lose_0.5' ? 'Lose 0.50kg/week' :
+                         user.weeklyGoal === 'gain_0.25' ? 'Gain 0.25kg/week' :
+                         'Gain 0.50kg/week'}
+                    </div>
+                )}
             </div>
 
             {/* Start Weight */}

@@ -1,6 +1,6 @@
 
 
-
+pydantic[email]
 fastapi
 uvicorn
 sqlalchemy

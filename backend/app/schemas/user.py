@@ -13,6 +13,14 @@ class UserBase(BaseModel):
     activity_rate: Optional[str] = None
     start_weight: Optional[int] = None
     goal_weight: Optional[int] = None
+    
+    # Nutrition Goals
+    daily_calorie_goal: Optional[int] = None
+    protein_goal: Optional[int] = None
+    carbs_goal: Optional[int] = None
+    fats_goal: Optional[int] = None
+    bmi: Optional[float] = None
+
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):

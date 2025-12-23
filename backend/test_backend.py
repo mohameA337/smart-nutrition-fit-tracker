@@ -1,8 +1,9 @@
 import requests
 import sys
 
+import uuid
 BASE_URL = "http://127.0.0.1:8000/api/v1"
-EMAIL = "test@example.com"
+EMAIL = f"test_{uuid.uuid4().hex[:8]}@example.com"
 PASSWORD = "password123"
 
 def test_backend():
@@ -36,10 +37,11 @@ def test_backend():
     # 2. Login
     print("\n2. Testing Login...")
     login_payload = {
-        "email": EMAIL,
+        "username": EMAIL,
         "password": PASSWORD
     }
-    res = requests.post(f"{BASE_URL}/auth/login", json=login_payload)
+    res = requests.post(f"{BASE_URL}/auth/login", data=login_payload)
+
     if res.status_code != 200:
         print(f"Login failed: {res.status_code} {res.text}")
         sys.exit(1)

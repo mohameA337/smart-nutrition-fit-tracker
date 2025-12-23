@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
-import { sendChatMessage } from '../services/api';
-import Navbar from '../components/Navbar';
+import { getUserProfile, sendChatMessage } from '../services/api';
+import { THEMES } from '../theme/theme';
 
 const Chatbot = () => {
+    // Theme State
+    const [isDarkMode, setIsDarkMode] = useState(true);
+    const theme = isDarkMode ? THEMES.dark : THEMES.light;
+    const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
     const [messages, setMessages] = useState([
         { role: 'system', content: 'Hello! I am your AI nutrition assistant. Ask me anything about diet, workouts, or health.' }
     ]);
@@ -19,8 +24,10 @@ const Chatbot = () => {
         setLoading(true);
 
         try {
-            const data = await sendChatMessage(input);
-            const aiMessage = { role: 'system', content: data.response };
+            const data = await sendChatMessage(input, getUserProfile);
+            // Ensure we handle the response format correctly (data.response or data)
+            const aiContent = data.response || data.message || "I didn't get a response.";
+            const aiMessage = { role: 'system', content: aiContent };
             setMessages(prev => [...prev, aiMessage]);
         } catch (error) {
             console.error("Chat error:", error);
@@ -32,97 +39,138 @@ const Chatbot = () => {
     };
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f0f2f5' }}>
-            <Navbar />
-            <div style={{ maxWidth: '800px', margin: '2rem auto', padding: '0 1rem' }}>
+        // 1. Outer Container: Centers the chat window on the page
+        <div style={{ 
+            minHeight: 'calc(100vh - 80px)', // Adjust for navbar
+            backgroundColor: theme.bg,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            transition: 'background-color 0.3s'
+        }}>
+
+            {/* 2. Chat Window */}
+            <div style={{
+                width: '100%',
+                maxWidth: '500px',      
+                height: '500px',        
+                backgroundColor: theme.cardBg,
+                borderRadius: '15px',
+                boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                border: `1px solid ${theme.cardBorder}`,
+                transition: 'background-color 0.3s, border-color 0.3s'
+            }}>
+
+                {/* Header */}
                 <div style={{
-                    backgroundColor: 'white',
-                    borderRadius: '10px',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                    height: '70vh',
+                    padding: '1rem',
+                    backgroundColor: isDarkMode ? '#2c3e50' : '#2c3e50', 
+                    color: 'white',
+                    textAlign: 'center',
                     display: 'flex',
-                    flexDirection: 'column'
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
                 }}>
-                    {/* Header */}
-                    <div style={{
-                        padding: '1rem',
-                        borderBottom: '1px solid #eee',
-                        backgroundColor: '#2c3e50',
-                        color: 'white',
-                        borderTopLeftRadius: '10px',
-                        borderTopRightRadius: '10px'
-                    }}>
-                        <h2 style={{ margin: 0 }}>🥑 AI Nutrition Assistant</h2>
-                    </div>
-
-                    {/* Messages Area */}
-                    <div style={{
-                        flex: 1,
-                        overflowY: 'auto',
-                        padding: '1rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '1rem'
-                    }}>
-                        {messages.map((msg, index) => (
-                            <div key={index} style={{
-                                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                                backgroundColor: msg.role === 'user' ? '#3498db' : '#ecf0f1',
-                                color: msg.role === 'user' ? 'white' : '#2c3e50',
-                                padding: '0.8rem 1.2rem',
-                                borderRadius: '20px',
-                                maxWidth: '70%',
-                                wordWrap: 'break-word'
-                            }}>
-                                {msg.content}
-                            </div>
-                        ))}
-                        {loading && (
-                            <div style={{ alignSelf: 'flex-start', color: '#7f8c8d', fontStyle: 'italic' }}>
-                                Thinking...
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Input Area */}
-                    <form onSubmit={handleSend} style={{
-                        padding: '1rem',
-                        borderTop: '1px solid #eee',
-                        display: 'flex',
-                        gap: '1rem'
-                    }}>
-                        <input
-                            type="text"
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask about calories, workouts, or meal plans..."
-                            style={{
-                                flex: 1,
-                                padding: '0.8rem',
-                                borderRadius: '5px',
-                                border: '1px solid #ddd',
-                                fontSize: '1rem'
-                            }}
-                            disabled={loading}
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            style={{
-                                backgroundColor: '#27ae60',
-                                color: 'white',
-                                border: 'none',
-                                padding: '0 1.5rem',
-                                borderRadius: '5px',
-                                cursor: loading ? 'not-allowed' : 'pointer',
-                                fontSize: '1rem',
-                                fontWeight: 'bold'
-                            }}
-                        >
-                            Send
-                        </button>
-                    </form>
+                    <h2 style={{ margin: 0, fontSize: '1.2rem', flex: 1 }}>AI Nutrition Assistant</h2>
+                    <button 
+                        onClick={toggleTheme}
+                        style={{
+                            background: 'transparent',
+                            border: '1px solid rgba(255,255,255,0.5)',
+                            color: 'white',
+                            padding: '5px 10px',
+                            borderRadius: '15px',
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        {isDarkMode ? '☀️' : '🌙'}
+                    </button>
                 </div>
+
+                {/* Messages Area */}
+                <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    backgroundColor: theme.cardBg
+                }}>
+                    {messages.map((msg, index) => (
+                        <div key={index} style={{
+                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                            backgroundColor: msg.role === 'user' ? theme.accentBlue : (isDarkMode ? theme.itemBg : '#f1f0f0'),
+                            color: msg.role === 'user' ? 'white' : theme.text,
+                            padding: '0.8rem 1.2rem',
+                            borderRadius: '18px',
+                            borderBottomRightRadius: msg.role === 'user' ? '4px' : '18px',
+                            borderBottomLeftRadius: msg.role === 'user' ? '18px' : '4px',
+                            maxWidth: '75%',
+                            wordWrap: 'break-word',
+                            fontSize: '0.95rem',
+                            lineHeight: '1.4'
+                        }}>
+                            {msg.content}
+                        </div>
+                    ))}
+                    {loading && (
+                        <div style={{ alignSelf: 'flex-start', color: theme.subText, fontStyle: 'italic', fontSize: '0.9rem', marginLeft: '10px' }}>
+                            Thinking...
+                        </div>
+                    )}
+                </div>
+
+                {/* Input Area */}
+                <form onSubmit={handleSend} style={{
+                    padding: '1rem',
+                    borderTop: `1px solid ${theme.itemBorder}`,
+                    display: 'flex',
+                    gap: '0.8rem',
+                    backgroundColor: theme.cardBg
+                }}>
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Type a message..."
+                        style={{
+                            flex: 1,
+                            padding: '0.8rem',
+                            borderRadius: '25px',
+                            border: `1px solid ${theme.cardBorder}`,
+                            fontSize: '0.95rem',
+                            outline: 'none',
+                            backgroundColor: theme.inputBg,
+                            color: theme.inputText
+                        }}
+                        disabled={loading}
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                            backgroundColor: theme.accentBlue,
+                            color: 'white',
+                            border: 'none',
+                            padding: '0 1.5rem',
+                            borderRadius: '25px',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            fontSize: '0.95rem',
+                            fontWeight: 'bold',
+                            transition: 'opacity 0.2s',
+                            opacity: loading ? 0.7 : 1
+                        }}
+                    >
+                        Send
+                    </button>
+                </form>
             </div>
         </div>
     );
