@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-// In a real app, this would be an env variable
+// In a real app, this would be an env variable. 
+// Using /api/v1 because that is what your backend logs show: "GET /api/v1/users/me"
 const API_URL = 'http://localhost:8000/api/v1';
 
 // Create axios instance
@@ -21,6 +22,7 @@ api.interceptors.request.use((config) => {
 
 // --- AUTH ---
 export const login = async (credentials) => {
+    // Backend expects OAuth2PasswordRequestForm (form-data)
     const formData = new FormData();
     formData.append('username', credentials.email);
     formData.append('password', credentials.password);
@@ -34,6 +36,7 @@ export const login = async (credentials) => {
 };
 
 export const register = async (userData) => {
+    // Backend expects JSON for signup
     const response = await api.post('/auth/register', userData);
     return response.data;
 };
@@ -51,6 +54,7 @@ export const getMeals = async () => {
 };
 
 export const logMeal = async (mealData) => {
+    // Backend expects: name, weight, calories
     const response = await api.post('/meals/', mealData);
     return response.data;
 };
@@ -67,6 +71,7 @@ export const getWorkouts = async () => {
 };
 
 export const logWorkout = async (workoutData) => {
+    // Backend expects: name, duration, calories_burned
     const response = await api.post('/workouts/', workoutData);
     return response.data;
 };
