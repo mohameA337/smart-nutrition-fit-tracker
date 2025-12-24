@@ -21,7 +21,7 @@ const WorkoutCard = ({ data, theme, onDelete }) => {
           <span>{data.name}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: theme.subText }}>
-          <span>💪 {data.caloriesBurned} kcal ({data.duration}min)</span>
+          <span>💪 {data.calories_burned} kcal ({data.duration}min)</span>
         </div>
       </div>
       <button 

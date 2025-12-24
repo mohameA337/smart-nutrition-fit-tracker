@@ -1,35 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { THEMES } from '../theme/theme';
+import { getUserProfile, updateUserProfile } from '../services/api';
 
 const Profile = () => {
   // Theme State
   const [isDarkMode, setIsDarkMode] = useState(true);
   const theme = isDarkMode ? THEMES.dark : THEMES.light;
-  
-  // Toggle Handler
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
-
-  // Edit Mode State
   const [isEditing, setIsEditing] = useState(false);
 
   // User Data State
   const [user, setUser] = useState({
-    name: "user1",
-    email: "user1@gmail.com",
-    gender: "Male", 
-    age: 28,
-    height: 178, // cm
-    weight: 74,  // kg (Current Weight)
-    activityRate: "High",
-    startWeight: 70, 
-    goalWeight: 80   
+    name: "",
+    email: "",
+    gender: "",
+    age: "",
+    height: "", 
+    weight: "",  
+    activityRate: "",
+    startWeight: "",
+    goalWeight: "",
+    weeklyGoal: "maintain" 
+
   });
 
   const [formData, setFormData] = useState(user);
 
+  // --- Fetch User Data ---
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const userData = await getUserProfile();
+        const savedGoal = localStorage.getItem('userWeeklyGoal') || 'maintain';
+
+        // Map backend fields to frontend state if needed
+        const mappedUser = {
+          name: userData.full_name || "",
+          email: userData.email || "",
+          gender: userData.gender || "",
+          age: userData.age || "",
+          height: userData.height || "",
+          weight: userData.weight || "",
+          activityRate: userData.activity_rate || "",
+          startWeight: userData.start_weight || "",
+          goalWeight: userData.goal_weight || "",
+          weeklyGoal: savedGoal
+
+        };
+        setUser(mappedUser);
+        setFormData(mappedUser);
+      } catch (error) {
+        console.error("Failed to fetch user profile", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
   // --- Handlers ---
   const handleEditClick = () => {
-    setFormData(user); 
+    setFormData(user);
     setIsEditing(true);
   };
 
@@ -37,9 +66,27 @@ const Profile = () => {
     setIsEditing(false);
   };
 
-  const handleSaveClick = () => {
-    setUser(formData); 
-    setIsEditing(false);
+  const handleSaveClick = async () => {
+    try {
+      // Map frontend state to backend fields
+      const apiData = {
+        full_name: formData.name,
+        gender: formData.gender,
+        age: formData.age,
+        height: formData.height,
+        weight: formData.weight,
+        activity_rate: formData.activityRate,
+        start_weight: formData.startWeight,
+        goal_weight: formData.goalWeight
+      };
+
+      await updateUserProfile(apiData);
+      localStorage.setItem('userWeeklyGoal', formData.weeklyGoal);
+      setUser(formData);
+      setIsEditing(false);
+    } catch (error) {
+      alert("Failed to update profile");
+    }
   };
 
   const handleChange = (e) => {
@@ -59,20 +106,20 @@ const Profile = () => {
   const isMaintenance = user.goalWeight === user.startWeight;
 
   const totalChangeNeeded = user.startWeight - user.goalWeight;
-  const currentChange = user.startWeight - user.weight; 
-  
+  const currentChange = user.startWeight - user.weight;
+
   let progressPercentage = 0;
   if (!isMaintenance) {
-      progressPercentage = Math.min(Math.max((currentChange / totalChangeNeeded) * 100, 0), 100);
+    progressPercentage = Math.min(Math.max((currentChange / totalChangeNeeded) * 100, 0), 100);
   } else {
-      progressPercentage = 100; 
+    progressPercentage = 100;
   }
 
   // Dynamic Text Helpers (Fixed to 2 decimals)
   const amountChanged = Math.abs(user.weight - user.startWeight).toFixed(2);
   const amountRemaining = Math.abs(user.goalWeight - user.weight).toFixed(2);
-  
-  const progressColor = isBulking ? '#8e44ad' : theme.accentBlue; 
+
+  const progressColor = isBulking ? '#8e44ad' : theme.accentBlue;
 
   // --- Styles ---
   const pageStyle = {
@@ -95,10 +142,10 @@ const Profile = () => {
     transition: 'background 0.3s, border 0.3s'
   };
 
-  const labelStyle = { 
-    display: 'block', 
-    color: theme.subText, 
-    fontSize: '13px', 
+  const labelStyle = {
+    display: 'block',
+    color: theme.subText,
+    fontSize: '13px',
     marginBottom: '5px',
     fontWeight: 'bold',
     transition: 'color 0.3s'
@@ -133,12 +180,12 @@ const Profile = () => {
   return (
     <div style={pageStyle}>
       <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-        
+
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
           <h1 style={{ margin: 0 }}>My Profile</h1>
-          
-          <button 
+
+          <button
             onClick={toggleTheme}
             style={{
               background: 'transparent',
@@ -160,40 +207,40 @@ const Profile = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: `2px solid ${theme.accentBlue}`, paddingBottom: '10px' }}>
             <h2 style={{ margin: 0 }}>👤 Personal Details</h2>
             {!isEditing && (
-                <button 
-                    onClick={handleEditClick}
-                    style={{ ...buttonStyle, background: theme.accentBlue, color: 'white' }}
-                >
-                    Edit Info
-                </button>
+              <button
+                onClick={handleEditClick}
+                style={{ ...buttonStyle, background: theme.accentBlue, color: 'white' }}
+              >
+                Edit Info
+              </button>
             )}
           </div>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            
+
             {/* Name */}
             <div style={{ gridColumn: 'span 2' }}>
               <label style={labelStyle}>Full Name</label>
               {isEditing ? (
-                  <input 
-                    name="name" 
-                    value={formData.name} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.name}</div>
+                <div style={inputStyle}>{user.name}</div>
               )}
             </div>
 
             {/* Email (Read Only) */}
             <div style={{ gridColumn: 'span 2' }}>
               <label style={labelStyle}>Email (Cannot be changed)</label>
-              <input 
-                value={user.email} 
-                readOnly 
+              <input
+                value={user.email}
+                readOnly
                 disabled
-                style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed', background: theme.itemBg }} 
+                style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed', background: theme.itemBg }}
               />
             </div>
 
@@ -201,15 +248,15 @@ const Profile = () => {
             <div>
               <label style={labelStyle}>Age</label>
               {isEditing ? (
-                  <input 
-                    type="number" 
-                    name="age" 
-                    value={formData.age} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.age}</div>
+                <div style={inputStyle}>{user.age}</div>
               )}
             </div>
 
@@ -217,17 +264,17 @@ const Profile = () => {
             <div>
               <label style={labelStyle}>Gender</label>
               {isEditing ? (
-                  <select 
-                    name="gender" 
-                    value={formData.gender} 
-                    onChange={handleChange}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
               ) : (
-                  <div style={inputStyle}>{user.gender}</div>
+                <div style={inputStyle}>{user.gender}</div>
               )}
             </div>
 
@@ -235,15 +282,15 @@ const Profile = () => {
             <div>
               <label style={labelStyle}>Height (cm)</label>
               {isEditing ? (
-                  <input 
-                    type="number" 
-                    name="height" 
-                    value={formData.height} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.height} cm</div>
+                <div style={inputStyle}>{user.height} cm</div>
               )}
             </div>
 
@@ -251,15 +298,15 @@ const Profile = () => {
             <div>
               <label style={labelStyle}>Weight (kg)</label>
               {isEditing ? (
-                  <input 
-                    type="number" 
-                    name="weight" 
-                    value={formData.weight} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  type="number"
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.weight} kg</div>
+                <div style={inputStyle}>{user.weight} kg</div>
               )}
             </div>
 
@@ -267,34 +314,56 @@ const Profile = () => {
             <div style={{ gridColumn: 'span 2' }}>
               <label style={labelStyle}>Activity Rate</label>
               {isEditing ? (
-                  <select 
-                    name="activityRate" 
-                    value={formData.activityRate} 
-                    onChange={handleChange}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="High">High</option>
-                  </select>
+                <select
+                  name="activityRate"
+                  value={formData.activityRate}
+                  onChange={handleChange}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="Low">Low</option>
+                  <option value="Moderate">Moderate</option>
+                  <option value="High">High</option>
+                </select>
               ) : (
-                  <div style={inputStyle}>{user.activityRate}</div>
+                <div style={inputStyle}>{user.activityRate}</div>
               )}
             </div>
-            
+
+            {/* Weekly Goal Selection */}            
+            <div style={{ gridColumn: 'span 2', borderTop: `1px dashed ${theme.cardBorder}`, paddingTop: '15px' }}>
+                <label style={{...labelStyle, color: theme.accentBlue}}>Weekly Pace Goal</label>
+                {isEditing ? (
+                    <select name="weeklyGoal" value={formData.weeklyGoal} onChange={handleChange} style={inputStyle}>
+                        <option value="maintain">Maintain Weight</option>
+                        <option value="lose_0.25">Lose 0.25kg / week </option>
+                        <option value="lose_0.5">Lose 0.50kg / week </option>
+                        <option value="gain_0.25">Gain 0.25kg / week </option>
+                        <option value="gain_0.5">Gain 0.50kg / week </option>
+                    </select>
+                ) : (
+                    <div style={inputStyle}>
+                        {user.weeklyGoal === 'maintain' ? 'Maintain Weight' : 
+                         user.weeklyGoal === 'lose_0.25' ? 'Lose 0.25kg/week' :
+                         user.weeklyGoal === 'lose_0.5' ? 'Lose 0.50kg/week' :
+                         user.weeklyGoal === 'gain_0.25' ? 'Gain 0.25kg/week' :
+                         'Gain 0.50kg/week'}
+                    </div>
+                )}
+            </div>
+
             {/* Start Weight */}
             <div>
               <label style={labelStyle}>Start Weight (kg)</label>
               {isEditing ? (
-                  <input 
-                    type="number" 
-                    name="startWeight" 
-                    value={formData.startWeight} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  type="number"
+                  name="startWeight"
+                  value={formData.startWeight}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.startWeight} kg</div>
+                <div style={inputStyle}>{user.startWeight} kg</div>
               )}
             </div>
 
@@ -302,15 +371,15 @@ const Profile = () => {
             <div>
               <label style={labelStyle}>Goal Weight (kg)</label>
               {isEditing ? (
-                  <input 
-                    type="number" 
-                    name="goalWeight" 
-                    value={formData.goalWeight} 
-                    onChange={handleChange} 
-                    style={inputStyle} 
-                  />
+                <input
+                  type="number"
+                  name="goalWeight"
+                  value={formData.goalWeight}
+                  onChange={handleChange}
+                  style={inputStyle}
+                />
               ) : (
-                  <div style={inputStyle}>{user.goalWeight} kg</div>
+                <div style={inputStyle}>{user.goalWeight} kg</div>
               )}
             </div>
 
@@ -318,20 +387,20 @@ const Profile = () => {
 
           {/* Action Buttons */}
           {isEditing && (
-              <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                  <button 
-                    onClick={handleSaveClick}
-                    style={{ ...buttonStyle, background: '#27ae60', color: 'white', flex: 1 }}
-                  >
-                    Save Changes
-                  </button>
-                  <button 
-                    onClick={handleCancelClick}
-                    style={{ ...buttonStyle, background: theme.itemBg, color: theme.text, border: `1px solid ${theme.cardBorder}`, flex: 1 }}
-                  >
-                    Cancel
-                  </button>
-              </div>
+            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+              <button
+                onClick={handleSaveClick}
+                style={{ ...buttonStyle, background: '#27ae60', color: 'white', flex: 1 }}
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancelClick}
+                style={{ ...buttonStyle, background: theme.itemBg, color: theme.text, border: `1px solid ${theme.cardBorder}`, flex: 1 }}
+              >
+                Cancel
+              </button>
+            </div>
           )}
         </div>
 
@@ -344,8 +413,8 @@ const Profile = () => {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '14px' }}>
-             <span>Start: <strong>{user.startWeight}kg</strong></span>
-             <span>Goal: <strong>{user.goalWeight}kg</strong></span>
+            <span>Start: <strong>{user.startWeight}kg</strong></span>
+            <span>Goal: <strong>{user.goalWeight}kg</strong></span>
           </div>
 
           <div style={{
@@ -359,61 +428,61 @@ const Profile = () => {
             transition: 'background 0.3s, border 0.3s'
           }}>
             <div style={{
-                height: '100%',
-                width: `${progressPercentage}%`,
-                backgroundColor: progressColor, // Dynamic Color
-                transition: 'width 0.5s ease-in-out',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                paddingRight: '10px',
-                color: 'white',
-                fontSize: '12px',
-                fontWeight: 'bold'
+              height: '100%',
+              width: `${progressPercentage}%`,
+              backgroundColor: progressColor, // Dynamic Color
+              transition: 'width 0.5s ease-in-out',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              paddingRight: '10px',
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: 'bold'
             }}>
               {Math.round(progressPercentage)}%
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px', paddingTop: '15px', borderTop: `1px dashed ${theme.itemBorder}` }}>
-             <div style={{ textAlign: 'center' }}>
-                <div style={labelStyle}>{isBulking ? "Total Gained" : "Total Lost"}</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: progressColor }}>
-                    {amountChanged} kg
-                </div>
-             </div>
-             <div style={{ textAlign: 'center' }}>
-                <div style={labelStyle}>Current Weight</div>
-                <div style={{ fontSize: '22px', fontWeight: 'bold', color: theme.text }}>
-                    {user.weight} kg
-                </div>
-             </div>
-             <div style={{ textAlign: 'center' }}>
-                <div style={labelStyle}>{isBulking ? "To Gain" : "To Lose"}</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: theme.subText }}>
-                    {amountRemaining} kg
-                </div>
-             </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={labelStyle}>{isBulking ? "Total Gained" : "Total Lost"}</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: progressColor }}>
+                {amountChanged} kg
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={labelStyle}>Current Weight</div>
+              <div style={{ fontSize: '22px', fontWeight: 'bold', color: theme.text }}>
+                {user.weight} kg
+              </div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={labelStyle}>{isBulking ? "To Gain" : "To Lose"}</div>
+              <div style={{ fontSize: '18px', fontWeight: 'bold', color: theme.subText }}>
+                {amountRemaining} kg
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Security / Password */}
         <div style={cardStyle}>
-            <h3 style={{ margin: '0 0 15px 0', color: theme.subText }}>Security</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px' }}>Need to update your password?</span>
-                <button 
-                    onClick={handlePasswordReset}
-                    style={{ 
-                        ...buttonStyle, 
-                        background: 'transparent', 
-                        border: `1px solid ${theme.accentRed}`, 
-                        color: theme.accentRed 
-                    }}
-                >
-                    Reset Password via Email
-                </button>
-            </div>
+          <h3 style={{ margin: '0 0 15px 0', color: theme.subText }}>Security</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px' }}>Need to update your password?</span>
+            <button
+              onClick={handlePasswordReset}
+              style={{
+                ...buttonStyle,
+                background: 'transparent',
+                border: `1px solid ${theme.accentRed}`,
+                color: theme.accentRed
+              }}
+            >
+              Reset Password via Email
+            </button>
+          </div>
         </div>
 
       </div>

@@ -1,5 +1,3 @@
-import React from 'react';
-
 const MealCard = ({ data, theme, onDelete }) => {
   if (!data) return null;
 
