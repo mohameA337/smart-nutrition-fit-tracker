@@ -9,7 +9,6 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
-// Create axios instance
 
 // Add interceptor to inject token
 api.interceptors.request.use((config) => {
@@ -29,11 +28,7 @@ export const login = async (credentials) => {
     formData.append('username', credentials.email);
     formData.append('password', credentials.password);
 
-    const response = await api.post('/auth/login', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const response = await api.post('/auth/login', formData);
     return response.data;
 };
 
