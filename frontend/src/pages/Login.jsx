@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
-import { login, register } from "../services/api";
-import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import axios from "axios";
 
 export default function Auth() {
-  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
 
   // Common fields
@@ -19,51 +17,115 @@ export default function Auth() {
   const [targetWeight, setTargetWeight] = useState("");
   const [activityRate, setActivityRate] = useState("");
 
-  // Check if already logged in
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      navigate("/dashboard");
+  // ✅ per-field errors (only for numeric fields)
+  const [errors, setErrors] = useState({
+    age: "",
+    height: "",
+    weight: "",
+    targetWeight: "",
+  });
+
+  // ✅ refs (to force user re-enter without clicking Register)
+  const ageRef = useRef(null);
+  const heightRef = useRef(null);
+  const weightRef = useRef(null);
+  const targetWeightRef = useRef(null);
+
+  // ✅ validate on blur (when user leaves the input)
+  const validatePositiveOnBlur = (field, rawValue, ref) => {
+    const value = String(rawValue ?? "").trim();
+
+    // if empty, let "required" handle it on submit
+    if (value === "") {
+      setErrors((p) => ({ ...p, [field]: "" }));
+      return;
     }
-  }, [navigate]);
+
+    const n = Number(value);
+
+    // invalid if NaN or <= 0
+    if (!Number.isFinite(n) || n <= 0) {
+      setErrors((p) => ({ ...p, [field]: "Invalid input, try again" }));
+
+      // force user to fix it immediately
+      setTimeout(() => {
+        ref?.current?.focus();
+        // optionally select text if any
+        try {
+          ref?.current?.select?.();
+        } catch {}
+      }, 0);
+    } else {
+      setErrors((p) => ({ ...p, [field]: "" }));
+    }
+  };
+
+  // ✅ validate all numeric fields on submit too (safety)
+  const validateAllNumbersBeforeSubmit = () => {
+    const fields = [
+      { key: "age", value: age, ref: ageRef },
+      { key: "height", value: height, ref: heightRef },
+      { key: "weight", value: weight, ref: weightRef },
+      { key: "targetWeight", value: targetWeight, ref: targetWeightRef },
+    ];
+
+    for (const f of fields) {
+      const v = String(f.value ?? "").trim();
+      const n = Number(v);
+
+      if (v === "" || !Number.isFinite(n) || n <= 0) {
+        setErrors((p) => ({ ...p, [f.key]: "Invalid input, try again" }));
+        setTimeout(() => f.ref.current?.focus(), 0);
+        return false;
+      }
+    }
+    return true;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!isLogin) {
+      // if any errors exist OR numbers invalid => don't submit
+      const hasErrors = Object.values(errors).some((x) => !!x);
+      if (hasErrors) return;
+
+      const ok = validateAllNumbersBeforeSubmit();
+      if (!ok) return;
+    }
+
     try {
-      if (isLogin) {
-        const res = await login({ email, password });
-        localStorage.setItem("token", res.access_token);
-        // alert("Login successful!"); // Removed to allow auto-redirect
-        navigate("/dashboard");
-      } else {
-        const payload = {
-          email,
-          password,
-          full_name: name,
-          gender,
-          age: parseInt(age),
-          height: parseInt(height),
-          weight: parseInt(weight),
-          target_weight: parseInt(targetWeight),
-          activity_rate: activityRate,
-          // Initialize start/goal weight with current/target for now
-          start_weight: parseInt(weight),
-          goal_weight: parseInt(targetWeight)
-        };
-        await register(payload);
-        alert("Account created! Please login.");
-        setIsLogin(true);
-      }
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+
+      const payload = isLogin
+        ? { email, password }
+        : {
+            email,
+            password,
+            name,
+            gender,
+            age: Number(age),
+            height: Number(height),
+            weight: Number(weight),
+            targetWeight: Number(targetWeight),
+            activityRate,
+          };
+
+      const res = await axios.post(endpoint, payload);
+
+      alert(isLogin ? "Login successful!" : "Account created!");
+      localStorage.setItem("token", res.data.token);
     } catch (err) {
-      alert(err.response?.data?.detail || "Something went wrong");
+      alert(err.response?.data?.message || "Something went wrong");
     }
   };
 
   return (
     <div style={styles.container}>
       <form onSubmit={handleSubmit} style={styles.card}>
-        <h2>{isLogin ? "Login" : "Create Account"}</h2>
+        <h2 style={{ textAlign: "center", marginBottom: 16 }}>
+          {isLogin ? "Login" : "Create Account"}
+        </h2>
 
         {/* Email */}
         <input
@@ -106,49 +168,89 @@ export default function Auth() {
               <option value="" hidden>
                 Gender
               </option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
             </select>
 
             {/* Age */}
             <input
+              ref={ageRef}
               type="number"
               placeholder="Age"
               value={age}
               onChange={(e) => setAge(e.target.value)}
-              style={styles.input}
+              onBlur={(e) => validatePositiveOnBlur("age", e.target.value, ageRef)}
+              style={{
+                ...styles.input,
+                border: errors.age ? "1px solid red" : "1px solid #ccc",
+              }}
               required
             />
+            {errors.age ? <div style={styles.error}>{errors.age}</div> : null}
 
             {/* Height */}
             <input
+              ref={heightRef}
               type="number"
               placeholder="Height (cm)"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
-              style={styles.input}
+              onBlur={(e) =>
+                validatePositiveOnBlur("height", e.target.value, heightRef)
+              }
+              style={{
+                ...styles.input,
+                border: errors.height ? "1px solid red" : "1px solid #ccc",
+              }}
               required
             />
+            {errors.height ? (
+              <div style={styles.error}>{errors.height}</div>
+            ) : null}
 
             {/* Weight */}
             <input
+              ref={weightRef}
               type="number"
               placeholder="Weight (kg)"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              style={styles.input}
+              onBlur={(e) =>
+                validatePositiveOnBlur("weight", e.target.value, weightRef)
+              }
+              style={{
+                ...styles.input,
+                border: errors.weight ? "1px solid red" : "1px solid #ccc",
+              }}
               required
             />
+            {errors.weight ? (
+              <div style={styles.error}>{errors.weight}</div>
+            ) : null}
 
             {/* Target Weight */}
             <input
+              ref={targetWeightRef}
               type="number"
               placeholder="Target Weight (kg)"
               value={targetWeight}
               onChange={(e) => setTargetWeight(e.target.value)}
-              style={styles.input}
+              onBlur={(e) =>
+                validatePositiveOnBlur(
+                  "targetWeight",
+                  e.target.value,
+                  targetWeightRef
+                )
+              }
+              style={{
+                ...styles.input,
+                border: errors.targetWeight ? "1px solid red" : "1px solid #ccc",
+              }}
               required
             />
+            {errors.targetWeight ? (
+              <div style={styles.error}>{errors.targetWeight}</div>
+            ) : null}
 
             {/* Activity Rate */}
             <select
@@ -173,7 +275,12 @@ export default function Auth() {
 
         <p
           style={{ cursor: "pointer", marginTop: 10, textAlign: "center" }}
-          onClick={() => setIsLogin(!isLogin)}
+          onClick={() => {
+            setIsLogin(!isLogin);
+
+            // clear errors when switching modes
+            setErrors({ age: "", height: "", weight: "", targetWeight: "" });
+          }}
         >
           {isLogin
             ? "Don't have an account? Register"
@@ -205,6 +312,7 @@ const styles = {
     margin: "8px 0",
     borderRadius: 5,
     border: "1px solid #ccc",
+    outline: "none",
   },
   button: {
     width: "100%",
@@ -215,5 +323,12 @@ const styles = {
     color: "white",
     fontWeight: "bold",
     cursor: "pointer",
+    marginTop: 6,
+  },
+  error: {
+    color: "red",
+    fontSize: 12,
+    marginTop: -4,
+    marginBottom: 6,
   },
 };
