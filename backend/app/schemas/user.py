@@ -12,7 +12,9 @@ class UserBase(BaseModel):
     target_weight: Optional[int] = None
     activity_rate: Optional[str] = None
     start_weight: Optional[int] = None
+    start_weight: Optional[int] = None
     goal_weight: Optional[int] = None
+    goal_type: Optional[str] = "maintain"
     
     # Nutrition Goals
     daily_calorie_goal: Optional[int] = None
@@ -39,6 +41,7 @@ class UserUpdate(BaseModel):
     activity_rate: Optional[str] = None
     start_weight: Optional[int] = None
     goal_weight: Optional[int] = None
+    goal_type: Optional[str] = None
 
 # Properties to receive via API on login
 class UserLogin(BaseModel):

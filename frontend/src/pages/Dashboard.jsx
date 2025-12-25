@@ -133,11 +133,7 @@ const Dashboard = () => {
 
   // Smart Goals
   const dailyCalorieGoal = userProfile.daily_calorie_goal || 2000;
-  const macroGoals = {
-    protein: userProfile.protein_goal || 150,
-    carbs: userProfile.carbs_goal || 250,
-    fats: userProfile.fats_goal || 70
-  };
+
 
   // Calculate Water Goal
   const waterGoal = Math.round((userProfile.weight || 0) * 35);
@@ -176,14 +172,12 @@ const Dashboard = () => {
     if (!manualMealName) return alert("Enter a food name first!");
     setAiLoading(true);
     try {
-      const query = `How many calories are in 100g of ${manualMealName}? Respond with JUST the number (e.g. 50).`;
+      const query = `How many calories are in 100g of ${manualMealName}?`;
       const response = await sendChatMessage(query);
-      const match = response.match(/\d+/);
-      if (match) {
-        setManualMealCals(match[0]);
-      } else {
-        alert("AI couldn't find a number. Please enter manually.");
-      }
+
+      const calMatch = response.match(/(\d+)\s*cal/i) || response.match(/\d+/);
+      if (calMatch) setManualMealCals(calMatch[1] || calMatch[0]);
+
     } catch (e) { alert("AI request failed"); }
     finally { setAiLoading(false); }
   };
@@ -222,14 +216,23 @@ const Dashboard = () => {
       if (!manualMealName || !manualMealCals || !mealWeight) {
         alert("Please fill all fields"); setMealLoading(false); return;
       }
-      const totalCals = Math.round((parseInt(manualMealCals) * parseInt(mealWeight)) / 100);
-      mealData = { name: manualMealName, weight: parseInt(mealWeight), calories: totalCals };
+      const weightFactor = parseInt(mealWeight) / 100;
+      mealData = {
+        name: manualMealName,
+        weight: parseInt(mealWeight),
+        calories: Math.round(parseInt(manualMealCals) * weightFactor)
+      };
     } else {
       if (!selectedMealId || !mealWeight) { setMealLoading(false); return; }
       const meal = PREDEFINED_MEALS.find(m => m.id === selectedMealId);
       if (!meal) { setMealLoading(false); return; }
-      const totalCalories = Math.round(parseInt(mealWeight) * meal.caloriesPerGram);
-      mealData = { name: meal.name, weight: parseInt(mealWeight), calories: totalCalories };
+
+      const weightInt = parseInt(mealWeight);
+      mealData = {
+        name: meal.name,
+        weight: weightInt,
+        calories: Math.round(weightInt * meal.caloriesPerGram)
+      };
     }
 
     try {
@@ -281,6 +284,8 @@ const Dashboard = () => {
 
   // Calculations
   const totalCaloriesIn = dailyMeals.reduce((acc, curr) => acc + (parseInt(curr.calories) || 0), 0);
+
+
   const totalBurned = dailyExercises.reduce((acc, curr) => {
     return acc + (curr.calories_burned || curr.caloriesBurned || 0);
   }, 0);
@@ -374,25 +379,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Macros */}
-          <div style={{ ...sectionStyle, padding: '20px' }}>
-            <h3 style={{ margin: '0 0 15px 0', color: theme.subText }}>Macro Targets</h3>
-            {[
-              { label: 'Protein', val: 0, goal: macroGoals.protein, color: '#e74c3c' },
-              { label: 'Carbs', val: 0, goal: macroGoals.carbs, color: '#f39c12' },
-              { label: 'Fats', val: 0, goal: macroGoals.fats, color: '#3498db' }
-            ].map((m, i) => (
-              <div key={i} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '5px' }}>
-                  <strong>{m.label}</strong>
-                  <span>{m.goal}g Goal</span>
-                </div>
-                <div style={{ height: '8px', background: theme.itemBg, borderRadius: '4px', overflow: 'hidden' }}>
-                  <div style={{ width: '0%', height: '100%', background: m.color }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
+
 
           {/* Hydration */}
           <div style={{ ...sectionStyle, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -486,21 +473,15 @@ const Dashboard = () => {
                       style={inputStyle}
                     />
                   </div>
-                  <div style={{ marginBottom: '10px' }}>
-                    <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '14px' }}>Calories per 100g</label>
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                      <input
-                        type="number"
-                        placeholder="e.g. 150"
-                        value={manualMealCals}
-                        onChange={e => setManualMealCals(e.target.value)}
-                        style={inputStyle}
-                      />
-                      <button onClick={handleAskAI} disabled={aiLoading} style={{ ...buttonStyle, width: 'auto', background: '#9b59b6', fontSize: '12px', padding: '0 15px' }}>
-                        {aiLoading ? 'Asking...' : 'Ask AI'}
-                      </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '5px', color: theme.subText, fontSize: '12px' }}>Cals /100g</label>
+                      <input type="number" value={manualMealCals} onChange={e => setManualMealCals(e.target.value)} style={inputStyle} />
                     </div>
                   </div>
+                  <button onClick={handleAskAI} disabled={aiLoading} style={{ ...buttonStyle, background: '#9b59b6', fontSize: '12px', padding: '10px', marginBottom: '15px' }}>
+                    {aiLoading ? 'Asking AI for Macros...' : '✨ Auto-Fill with AI'}
+                  </button>
                 </>
               )}
 

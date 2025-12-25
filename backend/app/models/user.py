@@ -20,6 +20,7 @@ class User(Base):
     activity_rate = Column(String, nullable=True)
     start_weight = Column(Integer, nullable=True) # kg
     goal_weight = Column(Integer, nullable=True) # kg
+    goal_type = Column(String, default="maintain") # lose, maintain, gain
 
     # Smart Goals (Auto-calculated)
     daily_calorie_goal = Column(Integer, default=2000)

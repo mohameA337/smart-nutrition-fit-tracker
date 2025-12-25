@@ -25,20 +25,15 @@ def update_user_me(
     user_data = user_in.model_dump(exclude={"password"}, exclude_unset=True)
     
     # Check if calculation params changed
-    calc_params = ["weight", "height", "age", "gender", "activity_rate", "goal_weight"]
+    calc_params = ["weight", "height", "age", "gender", "activity_rate", "goal_weight", "goal_type"]
     needs_recalc = any(k in user_data for k in calc_params)
 
     for key, value in user_data.items():
         setattr(current_user, key, value)
 
     if needs_recalc:
-        # Determine goal type
-        goal_type = "maintain"
-        if current_user.goal_weight and current_user.weight:
-            if current_user.goal_weight < current_user.weight:
-                goal_type = "lose"
-            elif current_user.goal_weight > current_user.weight:
-                goal_type = "gain"
+        # Determine goal type from EXPLICIT selection
+        goal_type = current_user.goal_type or "maintain"
 
         goals = calculate_nutrition_goals(
             current_user.weight,
@@ -83,12 +78,7 @@ def log_weight(
     current_user.weight = entry.weight
     
     # 3. Recalculate Logic (Same as update)
-    goal_type = "maintain"
-    if current_user.goal_weight:
-        if current_user.goal_weight < current_user.weight:
-            goal_type = "lose"
-        elif current_user.goal_weight > current_user.weight:
-            goal_type = "gain"
+    goal_type = current_user.goal_type or "maintain"
 
     goals = calculate_nutrition_goals(
         current_user.weight,
