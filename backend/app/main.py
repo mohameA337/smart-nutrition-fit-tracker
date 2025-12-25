@@ -50,3 +50,4 @@ app.include_router(chatbot.router, prefix="/api/v1/chat", tags=["Chatbot"])
 @app.get("/")
 def read_root():
     return {"message": "System is running"}
+

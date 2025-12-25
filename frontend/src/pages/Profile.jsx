@@ -15,13 +15,14 @@ const Profile = () => {
     email: "",
     gender: "",
     age: "",
-    height: "", 
-    weight: "",  
+    height: "",
+    weight: "",
     activityRate: "",
     startWeight: "",
     goalWeight: "",
-    weeklyGoal: "maintain" 
-
+    weeklyGoal: "maintain", // Now maps to goal_type
+    calGoal: 0,
+    calGoal: 0
   });
 
   const [formData, setFormData] = useState(user);
@@ -44,8 +45,8 @@ const Profile = () => {
           activityRate: userData.activity_rate || "",
           startWeight: userData.start_weight || "",
           goalWeight: userData.goal_weight || "",
-          weeklyGoal: savedGoal
-
+          weeklyGoal: userData.goal_type || "maintain",
+          calGoal: userData.daily_calorie_goal || 0
         };
         setUser(mappedUser);
         setFormData(mappedUser);
@@ -77,13 +78,21 @@ const Profile = () => {
         weight: formData.weight,
         activity_rate: formData.activityRate,
         start_weight: formData.startWeight,
-        goal_weight: formData.goalWeight
+        goal_weight: formData.goalWeight,
+        goal_type: formData.weeklyGoal // Send explicit goal type
       };
 
-      await updateUserProfile(apiData);
+      const updatedUser = await updateUserProfile(apiData);
+
+      // Update local state with returned (recalculated) data
+      const newMapped = {
+        ...formData,
+        calGoal: updatedUser.daily_calorie_goal
+      };
       localStorage.setItem('userWeeklyGoal', formData.weeklyGoal);
-      setUser(formData);
+      setUser(newMapped);
       setIsEditing(false);
+      alert("Profile updated! Smart Targets Recalculated.");
     } catch (error) {
       alert("Failed to update profile");
     }
@@ -329,26 +338,22 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Weekly Goal Selection */}            
+            {/* Weekly Goal Selection */}
             <div style={{ gridColumn: 'span 2', borderTop: `1px dashed ${theme.cardBorder}`, paddingTop: '15px' }}>
-                <label style={{...labelStyle, color: theme.accentBlue}}>Weekly Pace Goal</label>
-                {isEditing ? (
-                    <select name="weeklyGoal" value={formData.weeklyGoal} onChange={handleChange} style={inputStyle}>
-                        <option value="maintain">Maintain Weight</option>
-                        <option value="lose_0.25">Lose 0.25kg / week </option>
-                        <option value="lose_0.5">Lose 0.50kg / week </option>
-                        <option value="gain_0.25">Gain 0.25kg / week </option>
-                        <option value="gain_0.5">Gain 0.50kg / week </option>
-                    </select>
-                ) : (
-                    <div style={inputStyle}>
-                        {user.weeklyGoal === 'maintain' ? 'Maintain Weight' : 
-                         user.weeklyGoal === 'lose_0.25' ? 'Lose 0.25kg/week' :
-                         user.weeklyGoal === 'lose_0.5' ? 'Lose 0.50kg/week' :
-                         user.weeklyGoal === 'gain_0.25' ? 'Gain 0.25kg/week' :
-                         'Gain 0.50kg/week'}
-                    </div>
-                )}
+              <label style={{ ...labelStyle, color: theme.accentBlue }}>Weekly Pace Goal</label>
+              {isEditing ? (
+                <select name="weeklyGoal" value={formData.weeklyGoal} onChange={handleChange} style={inputStyle}>
+                  <option value="maintain">Maintain Weight</option>
+                  <option value="lose">Lose Weight</option>
+                  <option value="gain">Gain Muscle</option>
+                </select>
+              ) : (
+                <div style={inputStyle}>
+                  {user.weeklyGoal === 'maintain' ? 'Maintain Weight' :
+                    user.weeklyGoal === 'lose' ? 'Lose Weight' :
+                      'Gain Muscle'}
+                </div>
+              )}
             </div>
 
             {/* Start Weight */}
@@ -384,6 +389,21 @@ const Profile = () => {
             </div>
 
           </div>
+        </div>
+
+        {/* SMART TARGETS CARD */}
+        <div style={cardStyle}>
+          <h2 style={{ margin: '0 0 20px 0', borderBottom: `2px solid ${theme.accentBlue}`, paddingBottom: '10px' }}>🎯 Your Daily Targets</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px', textAlign: 'center' }}>
+            <div style={{ background: theme.itemBg, padding: '15px', borderRadius: '10px' }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.accentBlue }}>{user.calGoal}</div>
+              <div style={{ fontSize: '12px', color: theme.subText }}>Calories</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div style={cardStyle}>
 
           {/* Action Buttons */}
           {isEditing && (

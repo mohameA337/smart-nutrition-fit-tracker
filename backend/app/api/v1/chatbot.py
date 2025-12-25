@@ -21,8 +21,14 @@ def chat_with_gemini(request: ChatRequest):
         model = genai.GenerativeModel('gemini-flash-latest')
         
         # Add some context to the prompt
-        system_context = "You are a helpful and knowledgeable nutrition and fitness expert. Answer the user's question concisely and accurately."
-        full_prompt = f"{system_context}\n\nUser: {request.message}\nExpert:"
+        system_context = """
+        You are a smart nutrition assistant. 
+        If the user asks about food nutrition, return a JSON object ONLY with no markdown formatting:
+        {"calories": int, "protein": int, "carbs": int, "fats": int}
+        Values should be per 100g or per serving as implied.
+        If the user asks a general question, just answer normally in plain text.
+        """
+        full_prompt = f"{system_context}\n\nUser: {request.message}\nAssistant:"
         
         response = model.generate_content(full_prompt)
         return {"response": response.text}
