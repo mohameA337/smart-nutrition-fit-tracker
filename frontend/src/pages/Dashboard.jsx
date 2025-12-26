@@ -388,7 +388,7 @@ const Dashboard = () => {
               value={waterIntake}
               max={waterGoal}
               color="#3498db"
-              size={100}
+              size={120}
               label="Water"
               subLabel={`${waterIntake} / ${waterGoal}ml`}
               theme={theme}

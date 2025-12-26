@@ -320,7 +320,7 @@ const Profile = () => {
             </div>
 
             {/* Activity Rate (Dropbox) */}
-            <div style={{ gridColumn: 'span 2' }}>
+            <div>
               <label style={labelStyle}>Activity Rate</label>
               {isEditing ? (
                 <select
@@ -337,6 +337,23 @@ const Profile = () => {
                 <div style={inputStyle}>{user.activityRate}</div>
               )}
             </div>
+
+            {/* Daily Goal */}
+            <div>
+              <label style={labelStyle}>Daily Calorie Goal (kcal)</label>
+              {isEditing ? (
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.calGoal}
+                readOnly
+                disabled
+                style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed', background: theme.itemBg }}
+                />
+              ) : (
+                <div style={inputStyle}>{user.calGoal} kcal</div>
+              )}
+            </div>            
 
             {/* Weekly Goal Selection */}
             <div style={{ gridColumn: 'span 2', borderTop: `1px dashed ${theme.cardBorder}`, paddingTop: '15px' }}>
@@ -388,21 +405,6 @@ const Profile = () => {
               )}
             </div>
 
-          </div>
-        </div>
-
-        {/* SMART TARGETS CARD */}
-        <div style={cardStyle}>
-          <h2 style={{ margin: '0 0 20px 0', borderBottom: `2px solid ${theme.accentBlue}`, paddingBottom: '10px' }}>🎯 Your Daily Targets</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px', textAlign: 'center' }}>
-            <div style={{ background: theme.itemBg, padding: '15px', borderRadius: '10px' }}>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: theme.accentBlue }}>{user.calGoal}</div>
-              <div style={{ fontSize: '12px', color: theme.subText }}>Calories</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
         <div style={cardStyle}>
 
           {/* Action Buttons */}
@@ -422,7 +424,12 @@ const Profile = () => {
               </button>
             </div>
           )}
+        </div>            
+
+          </div>
         </div>
+
+        {/* SMART TARGETS CARD */}
 
         {/* Progress Bar */}
         <div style={cardStyle}>
